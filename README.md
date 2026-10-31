@@ -46,7 +46,7 @@ Fully blank rows are skipped. Each row keeps its **Excel row number** so you can
    - **outer:** every key from any sheet.
 3. **Conditions:**
    - *Add condition* adds to the selected group. It copies the selected condition's sheet and column. With nothing selected and several sheets loaded, it starts on *Any sheet*.
-   - **Any sheet** conditions test every sheet that has the column. Sheets without it are left unfiltered by that condition.
+   - **Any sheet** conditions test every sheet that has the column. A sheet without it skips that condition. A sheet that has none of the columns your conditions test matches no rows, and the status line names it.
    - *Add for column…* lists the columns that more than one sheet has. Tick as many as you like and set the operator and value they all get. You can leave the value blank to fill it in later; the Value box suggests values from the ticked columns.
      - Choose where the conditions go: into the selected group, or into a new OR group (a row matches if *any* of the columns matches) or a new AND group (*every* column must match).
      - OK adds one *Any sheet* condition per column. If the operator and value don't fit together, the dialog says so and stays open.
@@ -99,7 +99,7 @@ Excel date serial numbers and `50%`-style text are understood. A cell that can't
 **Filter each sheet on its own:**
 - Each sheet uses only the conditions that apply to it: conditions naming that sheet, plus *Any sheet* conditions on a column the sheet has.
 - So `A › x > 5 OR B › y < 3` filters A by `x > 5` and B by `y < 3`.
-- A sheet with no conditions that apply keeps all its rows.
+- With no conditions (or all switched off), every sheet keeps all its rows. Otherwise a sheet that none of the conditions apply to matches no rows, and a warning names it.
 - Each sheet with ticked output columns gives one result table.
 - When there are several, an **All results** table stacks them all, first in the results and exports. Columns are matched by name; a column a sheet doesn't have is left blank for its rows. A **Source** column says which sheet each row came from.
 

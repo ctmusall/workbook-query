@@ -4,9 +4,11 @@ Two modes:
 
 * ``independent`` - each source is filtered on its own. A condition naming another
   source is left out for this one (so ``A.x > 5 OR B.y < 3`` filters A by ``x > 5`` and
-  B by ``y < 3``), as is an any-sheet condition on a column this source lacks. A
-  source with no conditions left keeps all its rows. Condition column names match
-  exactly when they can, otherwise ignoring case and surrounding spaces. Each source with output columns
+  B by ``y < 3``), as is an any-sheet condition on a column this source lacks. When the
+  query has no active conditions every source keeps all its rows; otherwise a source
+  that none of them apply to matches no rows (a warning names it). Condition column
+  names match exactly when they can, otherwise ignoring case and surrounding spaces.
+  Each source with output columns
   gives one result table; when there are several, an "All results" table stacking
   them (columns matched by name) comes first.
 * ``join`` - rows are linked across sources by each source's key column, and the whole
@@ -229,6 +231,8 @@ def run_query(query: Query, frames: dict[str, pd.DataFrame] | None = None) -> Qu
 
 def _run_independent(query, frames, warnings):
     tables, matched = {}, {}
+    filtering = bool(query.where.conditions(active=True))
+    untested = []
     for s in query.sources:
         df = frames[s.alias]
 
@@ -237,7 +241,11 @@ def _run_independent(query, frames, warnings):
             return [] if col is None else [df[col]]
 
         mask = evaluate(query.where, column_for)
-        rows = df if mask is None else df[mask.to_numpy(dtype=bool)]
+        if mask is None and filtering:  # nothing in the query can be tested here
+            untested.append(s.alias)
+            rows = df.iloc[0:0]
+        else:
+            rows = df if mask is None else df[mask.to_numpy(dtype=bool)]
         matched[s.alias] = len(rows)
         cols = query.outputs.get(s.alias) or []
         if not cols:
@@ -248,6 +256,11 @@ def _run_independent(query, frames, warnings):
             out.insert(0, SHEET_COL, s.sheet)
             out.insert(0, FILE_COL, Path(s.path).name)
         tables[s.alias] = out.reset_index(drop=True)
+    if untested:
+        names = ", ".join(untested[:5]) + (f" and {len(untested) - 5} more" if len(untested) > 5 else "")
+        n = len(untested)
+        warnings.append(f"{n} sheet{'s' if n != 1 else ''} lack every column the conditions test, so "
+                        f"{'they match' if n != 1 else 'it matches'} no rows: {names}")
     if len(tables) >= 2:
         return {COMBINED: _combine(tables, query.include_provenance), **tables}, matched
     return tables, matched

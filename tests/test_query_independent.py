@@ -100,3 +100,19 @@ def test_disabled_group_is_not_validated(two_sources):
     bad = Group("AND", [Condition("L", "Status", ">", "abc"), Condition("*", "Ghost", "=", "1")], enabled=False)
     q = Query(sources=two_sources, where=Group("AND", [bad]), outputs={"L": ["Lot"]})
     assert len(run_query(q).tables["L"]) == 5
+
+
+def test_sheet_no_condition_applies_to_matches_nothing(two_sources, lots_xlsx):
+    owners = Source("O", str(lots_xlsx), "Owners")
+    q = Query(sources=two_sources + [owners], where=Group("AND", [Condition("*", "Status", "=", "pass")]),
+              outputs={"L": ["Lot"], "O": ["Lot"], "R": ["Value"]})
+    res = run_query(q)
+    assert len(res.tables["L"]) == 3  # Pass, pass, Pass
+    assert len(res.tables["O"]) == 0 and len(res.tables["R"]) == 0  # neither has a Status column
+    assert len(res.tables[COMBINED]) == 3
+    assert [s["matched"] for s in res.sources] == [3, 0, 0]
+    assert res.warnings == ["2 sheets lack every column the conditions test, so they match no rows: R, O"]
+
+    q.where.items[0].enabled = False  # no active conditions: everything is kept, no warning
+    res = run_query(q)
+    assert len(res.tables["O"]) == 2 and len(res.tables["R"]) == 5 and res.warnings == []
