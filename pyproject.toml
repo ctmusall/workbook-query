@@ -30,6 +30,9 @@ wbquery-cli = "wbquery.cli:main"
 [tool.setuptools]
 packages = ["wbquery"]
 
+[tool.setuptools.package-data]
+wbquery = ["assets/*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"

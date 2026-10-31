@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QSortFilterProxyModel, QStringListModel, Qt
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtGui import QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QComboBox, QCompleter, QDialog, QDialogButtonBox,
     QFileDialog,
@@ -28,6 +28,7 @@ APP = "Workbook Query"
 ANY_LABEL = "Any sheet"
 WORKBOOK_FILTER = "Workbooks (*.xlsx *.xlsm *.xls *.csv *.tsv *.txt);;All files (*)"
 MAX_SUGGESTIONS = 1000
+ICON = Path(__file__).resolve().parent / "assets" / "icon.png"
 
 
 def _is_blank(v) -> bool:
@@ -1386,6 +1387,10 @@ class MainWindow(QMainWindow):
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     app = QApplication.instance() or QApplication(sys.argv[:1])
+    app.setApplicationName(APP)
+    app.setDesktopFileName("wbquery")
+    if ICON.exists():
+        app.setWindowIcon(QIcon(str(ICON)))
     win = MainWindow()
     win.show()
     for path in argv:

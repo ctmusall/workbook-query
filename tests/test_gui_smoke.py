@@ -334,3 +334,12 @@ def test_group_name_toggle_and_bulk_edit(win, lots_xlsx, results_xlsx):
     ed.refresh()
     assert not ed.tree.topLevelItem(0).child(1).isExpanded()
     assert ed._path(ed.tree.currentItem()) == [1]
+
+
+def test_app_icon_is_packaged():
+    from PySide6.QtGui import QIcon
+
+    from wbquery.gui import ICON
+
+    assert ICON.exists() and ICON.with_suffix(".ico").exists()
+    assert not QIcon(str(ICON)).isNull()

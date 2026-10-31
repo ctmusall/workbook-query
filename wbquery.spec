@@ -16,6 +16,7 @@ def make_analysis(script, gui):
     return Analysis(
         [script],
         pathex=["."],
+        datas=[("wbquery/assets/icon.png", "wbquery/assets")] if gui else [],
         hiddenimports=["openpyxl"] + (["matplotlib.backends.backend_agg", "matplotlib.backends.backend_qtagg"]
                                       if gui else []),
         # The console build never imports Qt or matplotlib (charts are GUI-only); leaving them out saves ~130 MB.
@@ -30,6 +31,7 @@ def make_exe(a, name, console):
         pyz, a.scripts, a.binaries, a.datas, [],
         name=name,
         console=console,
+        icon="wbquery/assets/icon.ico",
         upx=False,
         strip=False,
         debug=False,

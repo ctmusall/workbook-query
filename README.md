@@ -164,3 +164,5 @@ QT_QPA_PLATFORM=offscreen .venv/bin/pytest --cov=wbquery
 | GitHub Actions | Every push runs the tests and builds both platforms. On `main`, a release `v<version>` is published (version from `wbquery/__init__.py`; bump it there and in `pyproject.toml`) |
 
 PyInstaller can't cross-compile, so each platform's executables are built on that platform. The build scripts run the test suite first.
+
+The app icon (`wbquery/assets/icon.png` and `icon.ico`) is drawn by `scripts/make_icon.py`; rerun it after changing the design.
