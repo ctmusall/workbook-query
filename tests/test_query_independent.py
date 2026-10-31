@@ -1,7 +1,7 @@
 import pytest
 
 from wbquery.conditions import Condition, Group
-from wbquery.query import FILE_COL, ROW_COL, SHEET_COL, Query, Source, run_query, validate
+from wbquery.query import COMBINED, FILE_COL, ROW_COL, SHEET_COL, SOURCE_COL, Query, Source, run_query, validate
 
 
 def test_each_source_filtered_by_its_own_conditions(two_sources):
@@ -58,3 +58,27 @@ def test_validation_messages(two_sources):
     assert "Choose at least one output column" in "\n".join(validate(Query(sources=two_sources), cols))
     with pytest.raises(ValueError, match="Nope"):
         run_query(q)
+
+
+def test_all_results_table_stacks_sources(two_sources):
+    q = Query(
+        sources=two_sources,
+        where=Group("OR", [Condition("L", "Status", "=", "pass"), Condition("R", "Value", ">=", "6e7")]),
+        outputs={"L": ["Lot", "Status"], "R": ["Lot ID", "Value"]},
+    )
+    res = run_query(q)
+    assert list(res.tables) == [COMBINED, "L", "R"]
+    allr = res.tables[COMBINED]
+    assert allr.columns.tolist() == [SOURCE_COL, FILE_COL, SHEET_COL, ROW_COL, "Lot", "Status", "Lot ID", "Value"]
+    assert allr[SOURCE_COL].tolist() == ["L", "L", "L", "R", "R"]
+    assert allr["Lot"].iloc[:3].tolist() == ["A1", "A3", 101] and allr["Lot"].iloc[3:].isna().all()
+    assert allr["Value"].iloc[3:].tolist() == [7e7, 6e7] and allr["Value"].iloc[:3].isna().all()
+    assert SOURCE_COL not in res.tables["L"].columns
+    assert [s["matched"] for s in res.sources] == [3, 2]
+
+
+def test_all_results_without_provenance(two_sources):
+    res = run_query(Query(sources=two_sources, outputs={"L": ["Lot"], "R": ["Value"]}, include_provenance=False))
+    allr = res.tables[COMBINED]
+    assert allr.columns.tolist() == ["Lot", "Value"]
+    assert len(allr) == len(res.tables["L"]) + len(res.tables["R"])

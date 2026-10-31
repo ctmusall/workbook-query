@@ -6,7 +6,8 @@ Two modes:
   source is left out for this one (so ``A.x > 5 OR B.y < 3`` filters A by ``x > 5`` and
   B by ``y < 3``), as is an any-sheet condition on a column this source lacks. A
   source with no conditions left keeps all its rows. Each source with output columns
-  gives one result table.
+  gives one result table; when there are several, an "All results" table stacking
+  them (columns matched by name) comes first.
 * ``join`` - rows are linked across sources by each source's key column, and the whole
   condition tree is tested against the joined row. One result table.
 """
@@ -32,6 +33,8 @@ SHEET_COL = "Sheet"
 ROW_COL = "Excel row"
 KEY_COL = "Key"
 JOINED = "Joined"
+SOURCE_COL = "Source"
+COMBINED = "All results"
 _KEY = "__key__"
 _PRESENT = "__present__"
 FORMAT_VERSION = 1
@@ -242,7 +245,20 @@ def _run_independent(query, frames, warnings):
             out.insert(0, SHEET_COL, s.sheet)
             out.insert(0, FILE_COL, Path(s.path).name)
         tables[s.alias] = out.reset_index(drop=True)
+    if len(tables) >= 2:
+        return {COMBINED: _combine(tables, query.include_provenance), **tables}, matched
     return tables, matched
+
+
+def _combine(tables: dict[str, pd.DataFrame], provenance: bool) -> pd.DataFrame:
+    """Stack the per-source tables; a column a source lacks is blank for its rows."""
+    parts = []
+    for alias, t in tables.items():
+        if provenance:
+            t = t.copy()
+            t.insert(0, SOURCE_COL, alias)
+        parts.append(t)
+    return pd.concat(parts, ignore_index=True, sort=False)
 
 
 def normalize_key(value, blank_token: str):

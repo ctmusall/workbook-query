@@ -489,9 +489,12 @@ class MainWindow(QMainWindow):
         self.run_btn.setDefault(True)
         self.export_xlsx_btn = QPushButton("Export Excel…")
         self.export_html_btn = QPushButton("Export HTML…")
+        self.visualize_btn = QPushButton("Visualize")
+        self.visualize_btn.setCheckable(True)
+        self.visualize_btn.setToolTip("Chart the results (switch back to see the tables)")
         self.save_query_btn = QPushButton("Save query…")
         self.load_query_btn = QPushButton("Load query…")
-        for b in (self.run_btn, self.export_xlsx_btn, self.export_html_btn):
+        for b in (self.run_btn, self.export_xlsx_btn, self.export_html_btn, self.visualize_btn):
             bar.addWidget(b)
         bar.addStretch()
         bar.addWidget(self.save_query_btn)
@@ -501,7 +504,15 @@ class MainWindow(QMainWindow):
         self.status_label.setWordWrap(True)
         rlay.addWidget(self.status_label)
         self.tabs = QTabWidget()
-        rlay.addWidget(self.tabs, 1)
+        from .gui_charts import ChartPanel  # matplotlib loads with the window, not on import of this module
+
+        self.charts = ChartPanel()
+        self.view_tabs = QTabWidget()
+        self.view_tabs.addTab(self.tabs, "Tables")
+        self.view_tabs.addTab(self.charts, "Visualize")
+        rlay.addWidget(self.view_tabs, 1)
+        self.visualize_btn.toggled.connect(lambda on: self.view_tabs.setCurrentIndex(1 if on else 0))
+        self.view_tabs.currentChanged.connect(lambda i: self.visualize_btn.setChecked(i == 1))
         self.run_btn.clicked.connect(lambda: self.run())
         self.export_xlsx_btn.clicked.connect(lambda: self.export("xlsx"))
         self.export_html_btn.clicked.connect(lambda: self.export("html"))
@@ -543,6 +554,7 @@ class MainWindow(QMainWindow):
         self.save_query_btn.setEnabled(has)
         self.export_xlsx_btn.setEnabled(self.result is not None)
         self.export_html_btn.setEnabled(self.result is not None)
+        self.visualize_btn.setEnabled(self.result is not None)
 
     def _mode_changed(self, *_):
         join = self.join_radio.isChecked()
@@ -720,6 +732,7 @@ class MainWindow(QMainWindow):
     def _clear_results(self):
         self.result = None
         self.tabs.clear()
+        self.charts.set_result(None)
         self._update_buttons()
 
     def run(self) -> bool:
@@ -745,6 +758,7 @@ class MainWindow(QMainWindow):
             view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
             view.resizeColumnsToContents()
             self.tabs.addTab(view, f"{name} ({len(df)})")
+        self.charts.set_result(result)
         counts = ", ".join(f"{n}: {len(df)} row{'s' if len(df) != 1 else ''}" for n, df in result.tables.items())
         text = f"<b>Matched</b> — {counts}"
         if result.warnings:

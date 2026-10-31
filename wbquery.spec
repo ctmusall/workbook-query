@@ -8,7 +8,7 @@ excludes = [
     "tkinter", "PySide6.QtWebEngineCore", "PySide6.QtWebEngineWidgets", "PySide6.Qt3DCore",
     "PySide6.QtQuick", "PySide6.QtQml", "PySide6.QtMultimedia", "PySide6.QtPdf", "PySide6.QtCharts",
     "PySide6.QtDataVisualization", "PySide6.QtBluetooth", "PySide6.QtNetworkAuth", "PySide6.QtSql",
-    "PySide6.QtTest", "PyQt5", "PyQt6", "IPython", "pytest", "matplotlib", "scipy",
+    "PySide6.QtTest", "PyQt5", "PyQt6", "IPython", "pytest", "scipy",
 ]
 
 
@@ -16,9 +16,10 @@ def make_analysis(script, gui):
     return Analysis(
         [script],
         pathex=["."],
-        hiddenimports=["openpyxl"],
-        # The console build never imports Qt; leaving it out saves ~100 MB.
-        excludes=excludes if gui else excludes + ["PySide6", "shiboken6"],
+        hiddenimports=["openpyxl"] + (["matplotlib.backends.backend_agg", "matplotlib.backends.backend_qtagg"]
+                                      if gui else []),
+        # The console build never imports Qt or matplotlib (charts are GUI-only); leaving them out saves ~130 MB.
+        excludes=excludes if gui else excludes + ["PySide6", "shiboken6", "matplotlib"],
         noarchive=False,
     )
 

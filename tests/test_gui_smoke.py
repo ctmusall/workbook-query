@@ -55,7 +55,8 @@ def test_independent_query_and_export(win, lots_xlsx, results_xlsx, tmp_path):
 
     win.outputs.set_checked("lots/Lots", ["Lot"])
     assert win.run(), win.errors
-    assert [win.tabs.tabText(i) for i in range(win.tabs.count())] == ["lots/Lots (3)", "results/Results (2)"]
+    assert [win.tabs.tabText(i) for i in range(win.tabs.count())] == ["All results (5)", "lots/Lots (3)",
+                                                                     "results/Results (2)"]
     assert win.export_xlsx_btn.isEnabled()
     for fmt in ("xlsx", "html"):
         out = win.export(fmt, str(tmp_path / f"res.{fmt}"))
@@ -113,3 +114,39 @@ def test_errors_are_reported(win, lots_xlsx, tmp_path):
     assert win.run() is False
     assert "needs a number or date" in win.errors[-1]
     assert win.load_query(str(tmp_path / "missing.json")) is False
+
+
+def test_visualize(win, lots_xlsx, results_xlsx, tmp_path):
+    from wbquery.charts import KINDS
+
+    _load(win, lots_xlsx, results_xlsx)
+    assert not win.visualize_btn.isEnabled()
+    assert win.run(), win.errors
+    assert win.visualize_btn.isEnabled()
+    win.visualize_btn.setChecked(True)
+    assert win.view_tabs.currentIndex() == 1
+    charts = win.charts
+    assert [charts.table_box.itemText(i) for i in range(charts.table_box.count())] == \
+        ["All results", "lots/Lots", "results/Results"]
+    charts.table_box.setCurrentText("results/Results")
+    assert charts.spec().y == "Value"  # first numeric column
+    for kind in KINDS:
+        charts.set_kind(kind)  # a needed X or Group column is picked automatically
+        assert charts.redraw(), (kind, charts.message.text())
+        assert not charts.has_error()
+    charts.set_kind("box")
+    charts.y_box.setCurrentText("File")  # not numeric
+    assert not charts.redraw() and charts.has_error()
+    charts.y_box.setCurrentText("Value")
+    for ext in ("png", "svg"):
+        out = charts.save(str(tmp_path / f"chart.{ext}"))
+        assert out is not None and out.stat().st_size > 0
+    assert charts.save(str(tmp_path / "chart")).suffix == ".png"
+
+    win.view_tabs.setCurrentIndex(0)
+    assert not win.visualize_btn.isChecked()
+    assert win.run()  # re-running keeps the chosen table and chart
+    assert charts.table_box.currentText() == "results/Results" and charts.kind() == "box"
+    win._clear_results()
+    assert not win.visualize_btn.isEnabled() and charts.frame() is None and charts.save("x.png") is None
+    assert win.errors == []

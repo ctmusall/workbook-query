@@ -1,0 +1,516 @@
+"""Charts of a result table, drawn with matplotlib onto a Figure (no Qt needed).
+
+``draw(fig, df, spec)`` clears ``fig`` and draws the chart ``spec`` describes. Values are
+read the same way the query reads them: numbers as numbers, text such as ``1,000``,
+``5e7`` or ``50%`` parsed (see :func:`conditions.parse_number`), anything else skipped.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import numpy as np
+import pandas as pd
+from matplotlib.figure import Figure
+from matplotlib.ticker import MaxNLocator
+
+from .conditions import parse_number
+
+AGGREGATES = ("count", "sum", "mean", "median", "min", "max")
+MAX_CATEGORIES = 50
+ANNOTATE_CELLS = 400  # heatmaps with at most this many cells show each cell's value
+D2 = 1.128  # d2 for moving ranges of span 2 (as in imr-chart)
+OUT_COLOR = "#d62728"
+LIMIT_COLOR = "#c0392b"
+CENTER_COLOR = "#2c7a3f"
+BLANK = "(blank)"
+OTHER = "Other"
+
+
+class ChartError(ValueError):
+    """The chosen columns can't make this chart; the message says why."""
+
+
+@dataclass(frozen=True)
+class KindInfo:
+    label: str
+    x: str  # "none" | "optional" | "required"
+    y: str  # "optional" | "required"
+    group: str  # "none" | "optional" | "required"
+    agg: bool = False
+    bins: bool = False
+    stacked: bool = False
+    x_label: str = "X"
+    group_label: str = "Group by"
+
+
+KINDS: dict[str, KindInfo] = {
+    "line": KindInfo("Line / run chart", "optional", "required", "optional", x_label="X (blank: row order)"),
+    "scatter": KindInfo("Scatter", "required", "required", "optional", group_label="Color by"),
+    "bar": KindInfo("Bar", "required", "optional", "none", agg=True, x_label="Category"),
+    "grouped_bar": KindInfo("Grouped / stacked bar", "required", "optional", "required", agg=True, stacked=True,
+                            x_label="Category"),
+    "histogram": KindInfo("Histogram", "none", "required", "optional", bins=True),
+    "box": KindInfo("Box plot", "none", "required", "optional"),
+    "pie": KindInfo("Pie", "required", "optional", "none", agg=True, x_label="Category"),
+    "heatmap": KindInfo("Heatmap / pivot", "required", "optional", "required", agg=True, x_label="Columns",
+                        group_label="Rows"),
+    "imr": KindInfo("I-MR control chart", "optional", "required", "none", x_label="Order by (blank: row order)"),
+}
+
+
+@dataclass
+class ChartSpec:
+    kind: str = "line"
+    x: str = ""
+    y: str = ""
+    group: str = ""
+    agg: str = "mean"
+    bins: int = 20
+    stacked: bool = False
+    title: str = ""
+
+
+# --- reading values ------------------------------------------------------------
+
+def _is_blank(v) -> bool:
+    return v is None or (not isinstance(v, str) and pd.isna(v)) or (isinstance(v, str) and not v.strip())
+
+
+def _to_float(v) -> float:
+    if _is_blank(v) or isinstance(v, (bool, np.bool_)):
+        return np.nan
+    if isinstance(v, (pd.Timestamp, np.datetime64)):
+        return np.nan
+    try:
+        f = parse_number(v)
+    except ValueError:
+        return np.nan
+    return np.nan if f is None else f
+
+
+def numeric(s: pd.Series) -> pd.Series:
+    """``s`` as floats; blanks and values that aren't numbers become NaN."""
+    if pd.api.types.is_bool_dtype(s):
+        return pd.Series(np.nan, index=s.index)
+    if pd.api.types.is_numeric_dtype(s):
+        return s.astype(float)
+    return s.map(_to_float).astype(float)
+
+
+def is_date(s: pd.Series) -> bool:
+    if pd.api.types.is_datetime64_any_dtype(s):
+        return True
+    vals = s.dropna()
+    return len(vals) > 0 and all(isinstance(v, pd.Timestamp) for v in vals)
+
+
+def is_numeric(s: pd.Series, share: float = 0.8) -> bool:
+    """True when at least ``share`` of the non-blank values are numbers."""
+    if is_date(s):
+        return False
+    present = s[~s.map(_is_blank)]
+    if present.empty:
+        return False
+    return numeric(present).notna().mean() >= share
+
+
+def numeric_columns(df: pd.DataFrame) -> list[str]:
+    return [str(c) for c in df.columns if is_numeric(df[c])]
+
+
+def label(v) -> str:
+    if _is_blank(v):
+        return BLANK
+    if isinstance(v, pd.Timestamp):
+        return v.strftime("%Y-%m-%d") if v == v.normalize() else str(v)
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    return str(v)
+
+
+def _column(df: pd.DataFrame, name: str, role: str) -> pd.Series:
+    if name not in df.columns:
+        raise ChartError(f"Choose a column for {role}" if not name else f"No column '{name}' in this table")
+    return df[name]
+
+
+def _y_values(df: pd.DataFrame, y: str, notes: list[str]) -> pd.Series:
+    raw = _column(df, y, "Y")
+    vals = numeric(raw)
+    if vals.notna().sum() == 0:
+        raise ChartError(f"'{y}' has no numeric values to plot")
+    skipped = int((vals.isna() & ~raw.map(_is_blank)).sum())
+    if skipped:
+        notes.append(f"{skipped} non-numeric value{'s' if skipped != 1 else ''} in '{y}' skipped")
+    return vals
+
+
+def _x_axis(s: pd.Series) -> tuple[pd.Series, list[str] | None]:
+    """Plot positions for ``s``: dates and numbers as they are; anything else as category codes,
+    returned with the category labels for the ticks."""
+    if is_date(s):
+        return pd.to_datetime(s, errors="coerce"), None
+    if is_numeric(s):
+        return numeric(s), None
+    labels = s.map(label)
+    cats = list(dict.fromkeys(labels))
+    codes = {c: i for i, c in enumerate(cats)}
+    return labels.map(codes).astype(float), cats
+
+
+def _sort_key(s: pd.Series):
+    if is_date(s):
+        return pd.to_datetime(s, errors="coerce")
+    if is_numeric(s):
+        return numeric(s)
+    return None
+
+
+def _groups(df: pd.DataFrame, group: str) -> list[tuple[str, pd.Index]]:
+    """(label, row index) per group in first-seen order, or one unnamed group of all rows."""
+    if not group:
+        return [("", df.index)]
+    labels = _column(df, group, "the group").map(label)
+    order = list(dict.fromkeys(labels))
+    if len(order) > MAX_CATEGORIES:
+        raise ChartError(f"'{group}' has {len(order)} distinct values; group by a column with at most "
+                         f"{MAX_CATEGORIES}")
+    return [(g, labels.index[labels == g]) for g in order]
+
+
+# --- aggregation ------------------------------------------------------------------
+
+def aggregate(df: pd.DataFrame, x: str, y: str = "", group: str = "", agg: str = "count") -> pd.DataFrame:
+    """One row per X category, one column per group (a single column ``value`` without a group),
+    holding ``agg`` of Y; with no Y (or ``count``), the number of rows / numeric Y values."""
+    if agg not in AGGREGATES:
+        raise ChartError(f"Aggregate must be one of {', '.join(AGGREGATES)}")
+    xs = _column(df, x, "X")
+    if not y and agg != "count":
+        agg = "count"
+    vals = numeric(_column(df, y, "Y")) if y else pd.Series(1.0, index=df.index)
+    frame = pd.DataFrame({"x": xs.map(label), "g": df[group].map(label) if group else "value", "v": vals})
+    if agg == "count":
+        out = frame.dropna(subset=["v"]).groupby(["x", "g"], sort=False)["v"].count()
+    else:
+        out = frame.dropna(subset=["v"]).groupby(["x", "g"], sort=False)["v"].agg(agg)
+    table = out.unstack("g")
+    rows = list(dict.fromkeys(frame["x"]))
+    cols = list(dict.fromkeys(frame["g"]))
+    key = _sort_key(xs)
+    if key is not None:
+        first = pd.Series(key.to_numpy(), index=frame["x"].to_numpy())
+        first = first[~first.index.duplicated()]
+        rows = sorted(rows, key=lambda r: (pd.isna(first.get(r)), first.get(r) if pd.notna(first.get(r)) else 0))
+    table = table.reindex(index=rows, columns=cols)
+    if agg == "count":
+        table = table.fillna(0)
+    table.index.name, table.columns.name = x, (group or None)
+    return table
+
+
+def _limit(table: pd.DataFrame, notes: list[str], lump: bool) -> pd.DataFrame:
+    """At most MAX_CATEGORIES rows, keeping the largest; ``lump`` sums the rest into 'Other'."""
+    if len(table) <= MAX_CATEGORIES:
+        return table
+    total = table.abs().sum(axis=1)
+    keep = total.sort_values(ascending=False).index[: MAX_CATEGORIES - (1 if lump else 0)]
+    rest = table.drop(index=keep)
+    out = table.loc[[r for r in table.index if r in set(keep)]]
+    if lump:
+        out = pd.concat([out, rest.sum().to_frame(OTHER).T])
+        notes.append(f"{len(rest)} smaller categories grouped as '{OTHER}'")
+    else:
+        notes.append(f"Showing the {MAX_CATEGORIES} largest of {len(table)} categories")
+    return out
+
+
+def _agg_label(spec: ChartSpec) -> str:
+    if not spec.y or spec.agg == "count":
+        return f"Count of {spec.y}" if spec.y else "Rows"
+    return f"{spec.agg.capitalize()} of {spec.y}"
+
+
+# --- I-MR ---------------------------------------------------------------------------
+
+@dataclass
+class ImrStats:
+    values: np.ndarray
+    moving_ranges: np.ndarray  # first entry NaN
+    mean: float
+    mr_bar: float
+    ucl: float
+    lcl: float
+    mr_ucl: float
+
+    @property
+    def out_of_limits(self) -> np.ndarray:
+        return (self.values > self.ucl) | (self.values < self.lcl)
+
+
+def imr_stats(values, k: float = 3.0) -> ImrStats:
+    """Individuals and moving-range limits: mean ± k·MR̄/d2 and MR UCL = (1 + k·d3/d2)·MR̄
+    (= 2.66·MR̄ and 3.267·MR̄ for k = 3)."""
+    v = np.asarray(values, dtype=float)
+    if len(v) < 2:
+        raise ChartError("An I-MR chart needs at least 2 numeric values")
+    mr = np.concatenate([[np.nan], np.abs(np.diff(v))])
+    mean, mr_bar = float(v.mean()), float(np.nanmean(mr))
+    sigma = mr_bar / D2
+    return ImrStats(v, mr, mean, mr_bar, mean + k * sigma, mean - k * sigma, mr_bar * (1 + k * 0.8525 / D2))
+
+
+# --- drawing ---------------------------------------------------------------------------
+
+def _color(i: int):
+    from matplotlib import colormaps
+
+    return colormaps["tab10"](i % 10)
+
+
+def _category_ticks(ax, cats: list[str], axis: str = "x"):
+    if len(cats) > MAX_CATEGORIES:
+        return
+    pos = range(len(cats))
+    if axis == "x":
+        ax.set_xticks(pos, cats, rotation=45 if max(map(len, cats), default=0) > 6 or len(cats) > 8 else 0,
+                      ha="right" if len(cats) > 8 or max(map(len, cats), default=0) > 6 else "center")
+    else:
+        ax.set_yticks(pos, cats)
+
+
+def _line(fig, df, spec, notes):
+    ax = fig.add_subplot()
+    y = _y_values(df, spec.y, notes)
+    if spec.x:
+        xs, cats = _x_axis(_column(df, spec.x, "X"))
+        ax.set_xlabel(spec.x)
+    else:
+        xs, cats = pd.Series(np.arange(1, len(df) + 1, dtype=float), index=df.index), None
+        ax.set_xlabel("Row")
+    for i, (name, idx) in enumerate(_groups(df, spec.group)):
+        d = pd.DataFrame({"x": xs[idx], "y": y[idx]}).dropna()
+        if spec.x and cats is None:
+            d = d.sort_values("x", kind="stable")
+        ax.plot(d["x"], d["y"], marker="o", markersize=3, linewidth=1.3, color=_color(i), label=name or None)
+    if cats:
+        _category_ticks(ax, cats)
+    ax.set_ylabel(spec.y)
+    return [ax]
+
+
+def _scatter(fig, df, spec, notes):
+    ax = fig.add_subplot()
+    y = _y_values(df, spec.y, notes)
+    xs, cats = _x_axis(_column(df, spec.x, "X"))
+    for i, (name, idx) in enumerate(_groups(df, spec.group)):
+        d = pd.DataFrame({"x": xs[idx], "y": y[idx]}).dropna()
+        ax.scatter(d["x"], d["y"], s=22, alpha=0.8, color=_color(i), label=name or None)
+    if cats:
+        _category_ticks(ax, cats)
+    ax.set_xlabel(spec.x)
+    ax.set_ylabel(spec.y)
+    return [ax]
+
+
+def _bar(fig, df, spec, notes):
+    ax = fig.add_subplot()
+    if spec.y:
+        _y_values(df, spec.y, notes)
+    table = _limit(aggregate(df, spec.x, spec.y, "", spec.agg), notes, lump=False)
+    vals = table.iloc[:, 0].fillna(0)
+    ax.bar(range(len(vals)), vals.to_numpy(), color=_color(0))
+    _category_ticks(ax, [str(c) for c in table.index])
+    ax.set_xlabel(spec.x)
+    ax.set_ylabel(_agg_label(spec))
+    return [ax]
+
+
+def _grouped_bar(fig, df, spec, notes):
+    ax = fig.add_subplot()
+    if not spec.group:
+        raise ChartError("Choose a column to group the bars by")
+    if spec.y:
+        _y_values(df, spec.y, notes)
+    _groups(df, spec.group)  # checks the number of groups
+    table = _limit(aggregate(df, spec.x, spec.y, spec.group, spec.agg), notes, lump=False)
+    n = len(table.columns)
+    pos = np.arange(len(table))
+    bottom = np.zeros(len(table))
+    width = 0.8 if spec.stacked else 0.8 / max(n, 1)
+    for i, g in enumerate(table.columns):
+        vals = table[g].fillna(0).to_numpy(dtype=float)
+        if spec.stacked:
+            ax.bar(pos, vals, width, bottom=bottom, color=_color(i), label=str(g))
+            bottom += vals
+        else:
+            ax.bar(pos - 0.4 + width * (i + 0.5), vals, width, color=_color(i), label=str(g))
+    _category_ticks(ax, [str(c) for c in table.index])
+    ax.set_xlabel(spec.x)
+    ax.set_ylabel(_agg_label(spec))
+    return [ax]
+
+
+def _histogram(fig, df, spec, notes):
+    ax = fig.add_subplot()
+    y = _y_values(df, spec.y, notes)
+    edges = np.histogram_bin_edges(y.dropna().to_numpy(), bins=max(1, int(spec.bins)))
+    groups = _groups(df, spec.group)
+    for i, (name, idx) in enumerate(groups):
+        vals = y[idx].dropna().to_numpy()
+        ax.hist(vals, bins=edges, color=_color(i), alpha=0.55 if len(groups) > 1 else 0.9,
+                edgecolor="white", linewidth=0.5, label=name or None)
+    ax.set_xlabel(spec.y)
+    ax.set_ylabel("Count")
+    return [ax]
+
+
+def _box(fig, df, spec, notes):
+    ax = fig.add_subplot()
+    y = _y_values(df, spec.y, notes)
+    data, names = [], []
+    for name, idx in _groups(df, spec.group):
+        vals = y[idx].dropna().to_numpy()
+        if len(vals):
+            data.append(vals)
+            names.append(name or spec.y)
+    ax.boxplot(data, patch_artist=True, boxprops={"facecolor": (*_color(0)[:3], 0.35)},
+               medianprops={"color": "black"})
+    ax.set_xticks(range(1, len(names) + 1), names, rotation=45 if len(names) > 8 else 0,
+                  ha="right" if len(names) > 8 else "center")
+    if spec.group:
+        ax.set_xlabel(spec.group)
+    ax.set_ylabel(spec.y)
+    return [ax]
+
+
+def _pie(fig, df, spec, notes):
+    ax = fig.add_subplot()
+    if spec.y:
+        _y_values(df, spec.y, notes)
+    table = aggregate(df, spec.x, spec.y, "", spec.agg)
+    vals = table.iloc[:, 0].fillna(0)
+    dropped = int((vals <= 0).sum())
+    vals = vals[vals > 0]
+    if dropped:
+        notes.append(f"{dropped} categor{'ies' if dropped != 1 else 'y'} with zero or negative values left out")
+    if vals.empty:
+        raise ChartError("Nothing positive to show in a pie chart")
+    vals = _limit(vals.to_frame(), notes, lump=spec.agg in ("count", "sum") or not spec.y).iloc[:, 0]
+    ax.pie(vals.to_numpy(), labels=[str(c) for c in vals.index], autopct="%1.0f%%", startangle=90,
+           counterclock=False, colors=[_color(i) for i in range(len(vals))],
+           wedgeprops={"edgecolor": "white", "linewidth": 1})
+    ax.set_aspect("equal")
+    ax.set_xlabel(_agg_label(spec))
+    return [ax]
+
+
+def _heatmap(fig, df, spec, notes):
+    ax = fig.add_subplot()
+    if not spec.group:
+        raise ChartError("Choose a column for the heatmap rows")
+    if spec.y:
+        _y_values(df, spec.y, notes)
+    _groups(df, spec.group)
+    table = _limit(aggregate(df, spec.x, spec.y, spec.group, spec.agg), notes, lump=False).T
+    data = table.to_numpy(dtype=float)
+    im = ax.imshow(np.ma.masked_invalid(data), aspect="auto", cmap="viridis")
+    fig.colorbar(im, ax=ax, label=_agg_label(spec))
+    _category_ticks(ax, [str(c) for c in table.columns], "x")
+    _category_ticks(ax, [str(r) for r in table.index], "y")
+    if data.size <= ANNOTATE_CELLS:
+        finite = data[np.isfinite(data)]
+        mid = (finite.min() + finite.max()) / 2 if finite.size else 0
+        for (r, c), v in np.ndenumerate(data):
+            if np.isfinite(v):
+                ax.text(c, r, f"{v:.4g}", ha="center", va="center", fontsize=8,
+                        color="black" if v > mid else "white")
+    ax.set_xlabel(spec.x)
+    ax.set_ylabel(spec.group)
+    return [ax]
+
+
+def _imr(fig, df, spec, notes):
+    y = _y_values(df, spec.y, notes)
+    d = pd.DataFrame({"y": y}, index=df.index)
+    xlabel = "Observation"
+    if spec.x:
+        xcol = _column(df, spec.x, "the order")
+        key = _sort_key(xcol)
+        d["x"] = key if key is not None else xcol.map(label)
+        d = d.dropna(subset=["y"]).sort_values("x", kind="stable")
+        xlabel = f"Observation (ordered by {spec.x})"
+    else:
+        d = d.dropna(subset=["y"])
+    st = imr_stats(d["y"].to_numpy())
+    n = np.arange(1, len(st.values) + 1)
+    ax_i, ax_mr = fig.subplots(2, 1, sharex=True, gridspec_kw={"height_ratios": [3, 2]})
+
+    ax_i.plot(n, st.values, marker="o", markersize=3, linewidth=1.2, color=_color(0))
+    out = st.out_of_limits
+    if out.any():
+        ax_i.scatter(n[out], st.values[out], color=OUT_COLOR, s=30, zorder=3, label="Outside limits")
+        notes.append(f"{int(out.sum())} point{'s' if out.sum() != 1 else ''} outside the control limits")
+    for val, color, style, text in ((st.ucl, LIMIT_COLOR, "--", "UCL"), (st.mean, CENTER_COLOR, "-", "X̄"),
+                                    (st.lcl, LIMIT_COLOR, "--", "LCL")):
+        ax_i.axhline(val, color=color, linestyle=style, linewidth=1)
+        ax_i.annotate(f"{text}={val:.4g}", (1, val), xycoords=("axes fraction", "data"), xytext=(4, 0),
+                      textcoords="offset points", va="center", fontsize=8, color=color)
+    ax_i.set_ylabel(spec.y)
+    ax_i.set_title("Individuals", fontsize=10, loc="left")
+
+    ax_mr.plot(n, st.moving_ranges, marker="o", markersize=3, linewidth=1.2, color=_color(0))
+    mr_out = st.moving_ranges > st.mr_ucl
+    if mr_out.any():
+        ax_mr.scatter(n[mr_out], st.moving_ranges[mr_out], color=OUT_COLOR, s=30, zorder=3)
+    for val, color, style, text in ((st.mr_ucl, LIMIT_COLOR, "--", "UCL"), (st.mr_bar, CENTER_COLOR, "-", "MR̄"),
+                                    (0.0, LIMIT_COLOR, "--", "LCL")):
+        ax_mr.axhline(val, color=color, linestyle=style, linewidth=1)
+        ax_mr.annotate(f"{text}={val:.4g}", (1, val), xycoords=("axes fraction", "data"), xytext=(4, 0),
+                       textcoords="offset points", va="center", fontsize=8, color=color)
+    ax_mr.set_ylabel("Moving range")
+    ax_mr.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax_mr.set_xlabel(xlabel)
+    ax_mr.set_title("Moving range", fontsize=10, loc="left")
+    return [ax_i, ax_mr]
+
+
+_DRAW = {"line": _line, "scatter": _scatter, "bar": _bar, "grouped_bar": _grouped_bar, "histogram": _histogram,
+         "box": _box, "pie": _pie, "heatmap": _heatmap, "imr": _imr}
+
+
+def draw(fig: Figure, df: pd.DataFrame, spec: ChartSpec) -> list[str]:
+    """Clear ``fig`` and draw ``spec`` from ``df``. Returns notes about skipped data;
+    raises :class:`ChartError` when the chosen columns can't make the chart."""
+    fig.clear()
+    if spec.kind not in KINDS:
+        raise ChartError(f"Unknown chart type '{spec.kind}'")
+    info = KINDS[spec.kind]
+    if df.empty:
+        raise ChartError("The table has no rows to chart")
+    if info.y == "required" and not spec.y:
+        raise ChartError("Choose a numeric column for Y")
+    if info.x == "required" and not spec.x:
+        raise ChartError(f"Choose a column for {info.x_label}")
+    notes: list[str] = []
+    try:
+        axes = _DRAW[spec.kind](fig, df, spec, notes)
+    except ChartError:
+        fig.clear()
+        raise
+    main = axes[0]
+    if main.get_legend_handles_labels()[0] and spec.kind != "pie":
+        main.legend(fontsize=8, title=spec.group or None, title_fontsize=8)
+    if spec.kind not in ("pie", "heatmap"):
+        for ax in axes:
+            ax.grid(True, alpha=0.3)
+    if spec.title:
+        fig.suptitle(spec.title)
+    if spec.kind in ("line", "scatter") and spec.x in df.columns and is_date(df[spec.x]):
+        fig.autofmt_xdate()
+    try:
+        fig.tight_layout()
+    except (ValueError, np.linalg.LinAlgError):  # very small canvases
+        pass
+    return notes

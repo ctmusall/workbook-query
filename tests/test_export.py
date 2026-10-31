@@ -16,7 +16,7 @@ def test_xlsx(tmp_path, two_sources):
     path = write_xlsx(_result(two_sources), tmp_path / "out")
     assert path.suffix == ".xlsx"
     wb = openpyxl.load_workbook(path)
-    assert wb.sheetnames == ["Query", "L", "R"]
+    assert wb.sheetnames == ["Query", "All results", "L", "R"]
     lots = wb["L"]
     assert [c.value for c in lots[1]] == ["File", "Sheet", "Excel row", "Lot", "Made"]
     assert lots.max_row == 4 and lots.freeze_panes == "A2"

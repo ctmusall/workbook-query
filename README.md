@@ -6,11 +6,12 @@ Query rows across any number of Excel workbooks and sheets, then export the matc
 - Build a query from **AND / OR groups** of conditions, nested as deep as you like and each one optionally negated with **NOT**. A condition tests one column of one sheet, or of **any sheet** that has that column.
 - Choose **output columns for each sheet**.
 - Combine sheets in one of two ways:
-  - **Filter each sheet on its own:** results are listed per sheet.
+  - **Filter each sheet on its own:** results are listed per sheet, plus an **All results** table with every match in one place.
   - **Join on a key column:** rows from different sheets are linked by a value such as a lot number, giving one merged row per key.
 - See results in the app, sort them by any column, and export them to **Excel** or a self-contained **HTML** report.
 - Every result row shows its file, sheet and Excel row number. The export records each input file's SHA-256 so you can prove which data was used.
 - Save a query to JSON and run it again later, from the app or from the command line.
+- **Visualize** the results as line, scatter, bar, histogram, box, pie, heatmap or I-MR control charts, and save a chart as PNG, SVG or PDF.
 
 ## Download
 
@@ -51,6 +52,23 @@ Fully blank rows are skipped. Each row keeps its **Excel row number** so you can
    - The *Where:* line shows the whole query in words.
 4. **Output columns:** tick the columns you want from each sheet, and drag to reorder them.
 5. **Run query**, then **Export Excel…** or **Export HTML…**. **Save query…** stores everything above as JSON.
+6. **Visualize** (or the *Visualize* tab) charts a result table. Choose the table, the chart type and its columns; the chart redraws as you change them. Use the toolbar to zoom and pan, and **Save chart…** for a PNG, SVG or PDF.
+
+### Chart types
+
+| Chart | Uses |
+|---|---|
+| Line / run chart | Y over X (dates, numbers or text; blank X = row order), one line per *Group by* value |
+| Scatter | Y against X, colored by an optional column |
+| Bar | One bar per X category: count of rows, or count / sum / mean / median / min / max of Y |
+| Grouped / stacked bar | As Bar, with bars split by *Group by*; tick *Stacked* to stack them |
+| Histogram | Distribution of Y in *Bins* bins, overlaid per optional group |
+| Box plot | Y's median, quartiles and outliers, one box per optional group |
+| Pie | Share of each X category (count, or an aggregate of Y) |
+| Heatmap / pivot | X categories across, *Rows* down, each cell the aggregate of Y (or a count) |
+| I-MR control chart | Individuals and moving range of Y with X̄ ± 2.66·MR̄ and MR UCL = 3.267·MR̄ limits; points outside are red. *Order by* sorts by a date or number column |
+
+Y values are read like conditions read them (`1,000`, `5e7` and `50%` are numbers). Values that aren't numbers are skipped, and the note under the chart says how many. Charts show at most 50 categories (pie charts group the rest as *Other*).
 
 ### Operators
 
@@ -72,6 +90,7 @@ Excel date serial numbers and `50%`-style text are understood. A cell that can't
 - So `A › x > 5 OR B › y < 3` filters A by `x > 5` and B by `y < 3`.
 - A sheet with no conditions that apply keeps all its rows.
 - Each sheet with ticked output columns gives one result table.
+- When there are several, an **All results** table stacks them all, first in the results and exports. Columns are matched by name; a column a sheet doesn't have is left blank for its rows. A **Source** column says which sheet each row came from.
 
 **Join on a key column:**
 - Keys match regardless of case and surrounding spaces.
