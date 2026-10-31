@@ -47,3 +47,13 @@ def test_csv(tmp_path):
     assert loader.numeric_columns(df) == ["Value"]
     with pytest.raises(FileNotFoundError):
         loader.load_table(tmp_path / "none.csv")
+
+
+def test_repeated_header_rows_are_dropped(tmp_path):
+    path = tmp_path / "repeat.xlsx"
+    rows = [["Person", "Hand", "Hand", "Note"], ["KSG", 0, 0, "ok"], [None, "Hand", "Hand", "Note"],
+            ["Hand", 1, 0, None], ["Person", "Hand", "Hand", "Note"]]
+    pd.DataFrame(rows).to_excel(path, sheet_name="S", index=False, header=False)
+    df = loader.load_table(path, "S")
+    assert list(df.columns) == ["Person", "Hand", "Hand (2)", "Note"]
+    assert list(df.index) == [2, 4]  # rows 3 and 5 repeat the header; row 4 is data (only one cell matches)

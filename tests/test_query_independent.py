@@ -82,3 +82,21 @@ def test_all_results_without_provenance(two_sources):
     allr = res.tables[COMBINED]
     assert allr.columns.tolist() == ["Lot", "Value"]
     assert len(allr) == len(res.tables["L"]) + len(res.tables["R"])
+
+
+def test_condition_columns_match_ignoring_case_and_spaces(two_sources):
+    q = Query(
+        sources=two_sources,
+        where=Group("AND", [Condition("*", "lot id", "=", "A2"), Condition("L", " status ", "=", "fail")]),
+        outputs={"L": ["Lot"], "R": ["Value"]},
+        include_provenance=False,
+    )
+    res = run_query(q)
+    assert res.tables["L"]["Lot"].tolist()[0] == "A2" and len(res.tables["L"]) == 2  # A2 and the blank lot
+    assert res.tables["R"]["Value"].tolist() == [7e7, 6e7]
+
+
+def test_disabled_group_is_not_validated(two_sources):
+    bad = Group("AND", [Condition("L", "Status", ">", "abc"), Condition("*", "Ghost", "=", "1")], enabled=False)
+    q = Query(sources=two_sources, where=Group("AND", [bad]), outputs={"L": ["Lot"]})
+    assert len(run_query(q).tables["L"]) == 5

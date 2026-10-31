@@ -45,12 +45,23 @@ Fully blank rows are skipped. Each row keeps its **Excel row number** so you can
    - **left:** every row of the first sheet;
    - **outer:** every key from any sheet.
 3. **Conditions:**
-   - *Add condition* adds to the selected group.
+   - *Add condition* adds to the selected group. It copies the selected condition's sheet and column. With nothing selected and several sheets loaded, it starts on *Any sheet*.
+   - **Any sheet** conditions test every sheet that has the column. Sheets without it are left unfiltered by that condition.
+   - *Add for column…* lists the columns that more than one sheet has. Tick as many as you like and set the operator and value they all get. You can leave the value blank to fill it in later; the Value box suggests values from the ticked columns.
+     - Choose where the conditions go: into the selected group, or into a new OR group (a row matches if *any* of the columns matches) or a new AND group (*every* column must match).
+     - OK adds one *Any sheet* condition per column. If the operator and value don't fit together, the dialog says so and stays open.
+   - Column names match even when their case or surrounding spaces differ, so `Lot ID`, `lot id` and `Lot ID ` count as the same column.
+   - Type in the *Column* box to search it. The *Value* box suggests values that are actually in that column. Press Enter in it to run the query.
+   - *Duplicate* (Ctrl+D) copies the selected condition or group. *Remove* (or Delete) deletes it.
+   - After a run, right-click a cell in a result table to add a condition `= that value` (or `<>`, or *is blank*).
    - *Add group* nests a new AND/OR group.
    - Set each group's *Match* to AND (all items must match) or OR (any item may match). Tick *NOT* to invert a group.
-   - Untick *On* to switch a condition off without deleting it.
+   - Untick *On* to switch a condition, or a whole group, off without deleting it. Everything inside a switched-off group is greyed out and left out of the query.
+   - Give a group a name in its *Name / Column* box. The name shows in the *Where:* line and in exported reports as `[name] (…)`.
+   - Collapse a group with its arrow to tidy the tree. While it's collapsed, its row shows one *Operator* and *Value* for every condition inside, when they all share the same ones. Editing those changes all of them at once. If they differ, the row says so; expand the group to edit them one by one. Collapsed groups stay collapsed when you save and reload a query.
    - The *Where:* line shows the whole query in words.
-4. **Output columns:** tick the columns you want from each sheet, and drag to reorder them.
+   - Column pick lists are alphabetical, with numbers in order (`P2` before `P10`). Each sheet's output list keeps the output order instead.
+4. **Output columns:** tick the columns you want from each sheet, and drag to reorder them. **Choose for all sheets…** lists every column once. Ticking or unticking one applies to every sheet that has it. A half-ticked column is ticked in some sheets only, and is left as it is unless you change it.
 5. **Run query**, then **Export Excel…** or **Export HTML…**. **Save query…** stores everything above as JSON.
 6. **Visualize** (or the *Visualize* tab) charts a result table. Choose the table, the chart type and its columns; the chart redraws as you change them. Use the toolbar to zoom and pan, and **Save chart…** for a PNG, SVG or PDF.
 
@@ -81,7 +92,7 @@ Y values are read like conditions read them (`1,000`, `5e7` and `50%` are number
 | `in` / `not in` | equal one of a comma-separated list (`Pass, Retest`) / none of them |
 | `is blank` / `is not blank` | are empty / have a value |
 
-Excel date serial numbers and `50%`-style text are understood. A cell that can't be compared, such as text in a `>` test, never matches.
+Excel date serial numbers and `50%`-style text are understood. A cell that can't be compared, such as text in a `>` test, never matches, except with `<>`: a non-blank cell that isn't a number differs from one, so `1 Micrococcus luteus` matches `<> 0`. Blank cells never match `<>`; use *is blank* for those.
 
 ### Filter each sheet on its own vs. join
 

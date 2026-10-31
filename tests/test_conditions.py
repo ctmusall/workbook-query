@@ -89,3 +89,50 @@ def test_dict_round_trip():
     assert again == tree
     with pytest.raises(ValueError, match="column"):
         Group.from_dict({"items": [{"source": "A"}]})
+
+
+def test_resolve_column():
+    from wbquery.conditions import column_key, resolve_column
+
+    assert column_key("  Lot ID ") == "lot id"
+    assert resolve_column(["lot", "Lot"], "Lot") == "Lot"  # exact match wins
+    assert resolve_column(["Lot ID", "Value"], " lot id") == "Lot ID"
+    assert resolve_column(["Lot ID"], "Lot") is None
+
+
+def test_sort_columns():
+    from wbquery.conditions import sort_columns
+
+    assert sort_columns(["P10", "status", "P2", "Lot ID", "lot", "Donor ID"]) == \
+        ["Donor ID", "lot", "Lot ID", "P2", "P10", "status"]
+
+
+def test_disabled_named_group():
+    df = pd.DataFrame({"a": [1, 2, 3], "b": ["x", "y", "z"]})
+    off = Group("OR", [Condition("*", "a", "=", "1")], name="  Ones ", enabled=False, collapsed=True)
+    tree = Group("AND", [off, Condition("*", "b", "<>", "z")])
+    assert off.name == "Ones"
+    assert evaluate(tree, _frame_resolver(df)).tolist() == [True, True, False]  # the off group is left out
+    assert tree.describe() == "Any sheet › b <> 'z'"
+    assert Group("AND", [off]).describe() == "(all rows)"
+    assert [c.column for c in tree.conditions(active=True)] == ["b"]
+    assert [c.column for c in tree.conditions()] == ["a", "b"]
+    doc = tree.to_dict()
+    assert doc["items"][0]["name"] == "Ones" and doc["items"][0]["enabled"] is False
+    assert "name" not in doc and "enabled" not in doc and "collapsed" not in doc  # defaults aren't written
+    assert Group.from_dict(doc) == tree
+
+
+def test_named_group_in_description():
+    inner = Group("OR", [Condition("A", "x", "=", "1"), Condition("A", "x", "=", "2")], name="Ones or twos")
+    assert Group("AND", [inner, Condition("A", "y", "is blank")]).describe() == \
+        "[Ones or twos] (A › x = '1' OR A › x = '2') AND A › y is blank"
+
+
+def test_not_equal_matches_text_that_isnt_a_number():
+    s = pd.Series([0, "0", "1 Micrococcus luteus", None, "", 3, "n/a"])
+    assert Condition("*", "x", "<>", "0").matches(s).tolist() == [False, False, True, False, False, True, True]
+    assert Condition("*", "x", "=", "0").matches(s).tolist() == [True, True, False, False, False, False, False]
+    assert Condition("*", "x", ">", "0").matches(s).tolist() == [False, False, False, False, False, True, False]
+    d = pd.Series(["2024-01-05", "pending", None])
+    assert Condition("*", "x", "<>", "2024-01-05").matches(d).tolist() == [False, True, False]

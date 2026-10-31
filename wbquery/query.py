@@ -5,7 +5,8 @@ Two modes:
 * ``independent`` - each source is filtered on its own. A condition naming another
   source is left out for this one (so ``A.x > 5 OR B.y < 3`` filters A by ``x > 5`` and
   B by ``y < 3``), as is an any-sheet condition on a column this source lacks. A
-  source with no conditions left keeps all its rows. Each source with output columns
+  source with no conditions left keeps all its rows. Condition column names match
+  exactly when they can, otherwise ignoring case and surrounding spaces. Each source with output columns
   gives one result table; when there are several, an "All results" table stacking
   them (columns matched by name) comes first.
 * ``join`` - rows are linked across sources by each source's key column, and the whole
@@ -23,7 +24,7 @@ from pathlib import Path
 import pandas as pd
 
 from . import loader
-from .conditions import ANY_SOURCE, Condition, Group, evaluate
+from .conditions import ANY_SOURCE, Condition, Group, evaluate, resolve_column
 from .proof import file_sha256
 
 MODES = ("independent", "join")
@@ -38,6 +39,11 @@ COMBINED = "All results"
 _KEY = "__key__"
 _PRESENT = "__present__"
 FORMAT_VERSION = 1
+
+
+def is_provenance(col: str) -> bool:
+    """The file / sheet / row columns a query adds to its result tables."""
+    return col in (SOURCE_COL, FILE_COL, SHEET_COL, ROW_COL) or col.endswith(f" {ROW_COL}")
 
 
 @dataclass
@@ -177,15 +183,13 @@ def validate(query: Query, columns: dict[str, list[str]]) -> list[str]:
                 errors.append(f"{s.alias}: choose a key column to join on")
             elif s.key not in columns.get(s.alias, []):
                 errors.append(f"{s.alias}: key column '{s.key}' not found")
-    for c in query.where.conditions():
-        if not c.enabled:
-            continue
+    for c in query.where.conditions(active=True):
         if c.source == ANY_SOURCE:
-            if not any(c.column in cols for cols in columns.values()):
+            if all(resolve_column(cols, c.column) is None for cols in columns.values()):
                 errors.append(f"{c.describe()}: no sheet has a column '{c.column}'")
         elif c.source not in columns:
             errors.append(f"{c.describe()}: no source named '{c.source}'")
-        elif c.column not in columns[c.source]:
+        elif resolve_column(columns[c.source], c.column) is None:
             errors.append(f"{c.describe()}: column '{c.column}' not found in {c.source}")
         try:
             c.check_value()
@@ -229,9 +233,8 @@ def _run_independent(query, frames, warnings):
         df = frames[s.alias]
 
         def column_for(c: Condition, s=s, df=df):
-            if c.source not in (ANY_SOURCE, s.alias) or c.column not in df.columns:
-                return []
-            return [df[c.column]]
+            col = resolve_column(df.columns, c.column) if c.source in (ANY_SOURCE, s.alias) else None
+            return [] if col is None else [df[col]]
 
         mask = evaluate(query.where, column_for)
         rows = df if mask is None else df[mask.to_numpy(dtype=bool)]
@@ -312,7 +315,11 @@ def _run_join(query, frames, warnings):
     aliases = [s.alias for s in query.sources]
 
     def column_for(c: Condition):
-        names = [f"{a}.{c.column}" for a in aliases if c.source in (ANY_SOURCE, a)]
+        names = []
+        for a in aliases:
+            col = resolve_column(frames[a].columns, c.column) if c.source in (ANY_SOURCE, a) else None
+            if col is not None:
+                names.append(f"{a}.{col}")
         return [merged[n] for n in names if n in merged.columns]
 
     mask = evaluate(query.where, column_for)

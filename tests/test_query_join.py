@@ -58,3 +58,9 @@ def test_join_requires_keys(two_sources):
         assert "choose a key column" in str(exc)
     else:
         raise AssertionError("expected a ValueError")
+
+
+def test_join_condition_columns_match_ignoring_case(two_sources):
+    where = Group("AND", [Condition("*", "STATUS", "=", "fail"), Condition("R", "value", ">", "6.5e7")])
+    out = run_query(_query(two_sources, where=where)).tables[JOINED]
+    assert out[KEY_COL].tolist() == ["A2"]

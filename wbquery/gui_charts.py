@@ -16,14 +16,10 @@ from PySide6.QtWidgets import (  # noqa: E402
 )
 
 from .charts import AGGREGATES, KINDS, ChartError, ChartSpec, draw, is_date, numeric_columns  # noqa: E402
-from .query import FILE_COL, ROW_COL, SHEET_COL, SOURCE_COL, QueryResult  # noqa: E402
+from .conditions import sort_columns  # noqa: E402
+from .query import QueryResult, is_provenance  # noqa: E402,F401 - is_provenance re-exported
 
 NONE = "(none)"
-
-
-def is_provenance(col: str) -> bool:
-    """The file / sheet / row columns a query adds; listed last so they aren't picked by default."""
-    return col in (SOURCE_COL, FILE_COL, SHEET_COL, ROW_COL) or col.endswith(f" {ROW_COL}")
 
 
 IMAGE_FILTER = "PNG image (*.png);;SVG image (*.svg);;PDF document (*.pdf)"
@@ -163,7 +159,8 @@ class ChartPanel(QWidget):
         box.clear()
         if optional:
             box.addItem(NONE)
-        box.addItems(items)
+        extra = [c for c in items if is_provenance(c)]  # file / sheet / row stay last
+        box.addItems(sort_columns(c for c in items if c not in extra) + extra)
         if keep and keep != NONE and box.findText(keep) >= 0:
             box.setCurrentText(keep)
         elif default and box.findText(default) >= 0:

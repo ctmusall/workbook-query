@@ -2,18 +2,21 @@
 
 A :class:`Condition` tests one column of one source (a workbook sheet), e.g.
 ``Results › Value > 5e7`` or ``Lots › Status = Pass``. The source may be ``*``
-("any sheet"): it then tests every source that has that column. Conditions are
-combined in nested :class:`Group` s, each joined by AND or OR and optionally
-negated.
+("any sheet"): it then tests every source that has that column. Column names
+match exactly when they can, otherwise ignoring case and surrounding spaces
+(see :func:`resolve_column`). Conditions are combined in nested :class:`Group` s,
+each joined by AND or OR and optionally negated.
 
 Comparison semantics are imr-chart's highlight rules: a value that reads as a
 number (``5e7``, ``1,000``, ``50%``) compares numerically, one that reads as a
 date compares as a date, and otherwise ``=`` / ``<>`` compare text ignoring case
-and surrounding spaces. Cells that can't be compared never match.
+and surrounding spaces. Blank cells never match (except ``is blank``); other cells
+that can't be compared match only ``<>`` / ``not in`` (``1 Micrococcus luteus`` <> 0).
 """
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Callable, Union
 
@@ -52,6 +55,31 @@ def parse_number(text: str | float | None) -> float | None:
         return float(s)
     except ValueError:
         raise ValueError(f"Not a number: '{text}'") from None
+
+
+def column_key(name) -> str:
+    """How column names compare when no exact match exists: ignoring case and surrounding spaces."""
+    return str(name).strip().casefold()
+
+
+def _natural_key(name) -> list:
+    parts = re.split(r"(\d+)", column_key(name))
+    return [(0, int(p), "") if p.isdigit() else (1, 0, p) for p in parts if p]
+
+
+def sort_columns(columns) -> list[str]:
+    """Columns in alphabetical order for pick lists: ignoring case, with numbers in order (P2 before P10)."""
+    return sorted((str(c) for c in columns), key=lambda c: (_natural_key(c), c))
+
+
+def resolve_column(columns, name) -> str | None:
+    """The column of ``columns`` that ``name`` refers to: an exact match, else the first whose
+    :func:`column_key` matches; None when there's neither."""
+    columns = [str(c) for c in columns]
+    if str(name) in columns:
+        return str(name)
+    key = column_key(name)
+    return next((c for c in columns if column_key(c) == key), None)
 
 
 def _text(s: pd.Series, blank: pd.Series) -> pd.Series:
@@ -102,7 +130,8 @@ class Condition:
         self.matches(pd.Series([], dtype=object))
 
     def matches(self, s: pd.Series) -> pd.Series:
-        """Boolean per cell of ``s``; cells that can't be compared never match."""
+        """Boolean per cell of ``s``; blank cells, and others that can't be compared, don't match
+        (except that ``<>`` matches non-blank cells that can't be read as its number or date)."""
         blank = loader._is_blank(s)
         if self.op == "is blank":
             return blank
@@ -132,15 +161,22 @@ class Condition:
         except ValueError:
             number = None
         if number is not None:
-            left = loader.to_numeric(s)
-            return (cmp(left, number) & left.notna()).astype(bool)
+            return self._ordered(op, cmp, loader.to_numeric(s), number, blank)
         when = pd.to_datetime(value, errors="coerce", format="mixed") if value.strip() else pd.NaT
         if not pd.isna(when):
-            left = loader.to_datetime(s)
-            return (cmp(left, when) & left.notna()).astype(bool)
+            return self._ordered(op, cmp, loader.to_datetime(s), when, blank)
         if op not in ("=", "<>"):
             raise ValueError(f"{self.describe()}: '{op}' needs a number or date, not '{value}'")
         return cmp(_text(s, blank), value.strip().casefold()).astype(bool)
+
+    @staticmethod
+    def _ordered(op, cmp, left: pd.Series, value, blank: pd.Series) -> pd.Series:
+        """Compare cells read as numbers / dates. A non-blank cell that doesn't read as one can't be
+        ordered, so only ``<>`` matches it: ``1 Micrococcus luteus`` <> 0."""
+        hit = (cmp(left, value) & left.notna()).astype(bool)
+        if op == "<>":
+            hit |= left.isna() & ~blank
+        return hit
 
     def to_dict(self) -> dict:
         return {"source": self.source, "column": self.column, "op": self.op,
@@ -149,23 +185,38 @@ class Condition:
 
 @dataclass
 class Group:
+    """AND / OR of conditions and sub-groups. A group that isn't ``enabled`` is left out entirely,
+    like a disabled condition. ``name`` is a label for people; ``collapsed`` is how the editor shows it."""
+
     logic: str = "AND"
     items: list[Union[Condition, "Group"]] = field(default_factory=list)
     negate: bool = False
+    name: str = ""
+    enabled: bool = True
+    collapsed: bool = False
 
     def __post_init__(self):
         self.logic = str(self.logic).upper()
         if self.logic not in LOGIC:
             raise ValueError(f"Group: logic must be AND or OR, not '{self.logic}'")
+        self.name = "" if self.name is None else str(self.name).strip()
 
-    def conditions(self) -> list[Condition]:
-        """Every condition in this group and its sub-groups, in order."""
+    def conditions(self, active: bool = False) -> list[Condition]:
+        """Every condition in this group and its sub-groups, in order; with ``active``, only those that
+        are switched on and not inside a group that's switched off."""
+        if active and not self.enabled:
+            return []
         out = []
         for item in self.items:
-            out.extend(item.conditions() if isinstance(item, Group) else [item])
+            if isinstance(item, Group):
+                out.extend(item.conditions(active))
+            elif item.enabled or not active:
+                out.append(item)
         return out
 
     def describe(self, top: bool = True) -> str:
+        if not self.enabled:
+            return "" if not top else "(all rows)"
         parts = [i.describe(top=False) if isinstance(i, Group) else i.describe()
                  for i in self.items if isinstance(i, Group) or i.enabled]
         parts = [p for p in parts if p]
@@ -174,11 +225,19 @@ class Group:
         body = f" {self.logic} ".join(parts)
         if len(parts) > 1 and not (top and not self.negate):
             body = f"({body})"
-        return f"NOT {body}" if self.negate else body
+        body = f"NOT {body}" if self.negate else body
+        return f"[{self.name}] {body}" if self.name else body
 
     def to_dict(self) -> dict:
-        return {"logic": self.logic, "negate": self.negate,
-                "items": [i.to_dict() for i in self.items]}
+        doc = {"logic": self.logic, "negate": self.negate}
+        if self.name:
+            doc["name"] = self.name
+        if not self.enabled:
+            doc["enabled"] = False
+        if self.collapsed:
+            doc["collapsed"] = True
+        doc["items"] = [i.to_dict() for i in self.items]
+        return doc
 
     @classmethod
     def from_dict(cls, doc: dict) -> "Group":
@@ -196,7 +255,9 @@ class Group:
                                               if k in item}))
                 except TypeError:
                     raise ValueError("Each condition needs a \"column\" and an \"op\"") from None
-        return cls(logic=doc.get("logic", "AND"), items=items, negate=bool(doc.get("negate", False)))
+        return cls(logic=doc.get("logic", "AND"), items=items, negate=bool(doc.get("negate", False)),
+                   name=doc.get("name", ""), enabled=bool(doc.get("enabled", True)),
+                   collapsed=bool(doc.get("collapsed", False)))
 
 
 ColumnResolver = Callable[[Condition], list[pd.Series]]
@@ -207,7 +268,8 @@ def evaluate(node: Condition | Group, column_for: ColumnResolver) -> pd.Series |
 
     ``column_for(condition)`` returns the frame's columns the condition tests (several for an
     any-sheet condition after a join; a row matches if any of them does), or ``[]`` when the
-    condition doesn't apply to this frame. Conditions that don't apply, and disabled ones, are
+    condition doesn't apply to this frame. Conditions that don't apply, and disabled ones (or ones
+    in a disabled group), are
     left out, so a group reduces to the parts that do apply; a group with none left is None.
     """
     if isinstance(node, Condition):
@@ -220,6 +282,8 @@ def evaluate(node: Condition | Group, column_for: ColumnResolver) -> pd.Series |
         for s in cols[1:]:
             hit |= node.matches(s).fillna(False).astype(bool)
         return hit
+    if not node.enabled:
+        return None
     results = [r for r in (evaluate(i, column_for) for i in node.items) if r is not None]
     if not results:
         return None

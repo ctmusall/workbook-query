@@ -62,6 +62,25 @@ def _dedupe(names: list) -> list[str]:
     return out
 
 
+_DEDUPE_SUFFIX = re.compile(r" \(\d+\)$")
+
+
+def _drop_repeated_headers(df: pd.DataFrame) -> pd.DataFrame:
+    """Drop rows that repeat the header (a header copied further down the sheet): at least
+    three non-blank cells, 80% of them equal to their column's name (``Chest 1`` under ``Chest 1 (2)``
+    counts too)."""
+    if df.empty:
+        return df
+    names = [{str(c).strip().casefold(), _DEDUPE_SUFFIX.sub("", str(c)).strip().casefold()} for c in df.columns]
+
+    def repeats(row) -> bool:
+        cells = [(str(v).strip().casefold(), n) for v, n in zip(row, names) if not pd.isna(v) and str(v).strip()]
+        return len(cells) >= 3 and sum(v in n for v, n in cells) >= 0.8 * len(cells)
+
+    keep = [not repeats(row) for row in df.itertuples(index=False, name=None)]
+    return df[keep]
+
+
 def load_table(path: str | Path, sheet: str | None = None) -> pd.DataFrame:
     """Load a sheet (or CSV) into a DataFrame with resolved column names.
 
@@ -79,7 +98,7 @@ def load_table(path: str | Path, sheet: str | None = None) -> pd.DataFrame:
         df = pd.read_csv(path, sep=sep, engine="python", skip_blank_lines=False)
         df.columns = _dedupe(list(df.columns))
         df.index = pd.RangeIndex(2, len(df) + 2, name=SOURCE_ROW)  # line 1 is the header
-        return df.dropna(how="all")
+        return _drop_repeated_headers(df.dropna(how="all"))
 
     xl = pd.ExcelFile(path)
     if sheet is None:
@@ -104,7 +123,7 @@ def load_table(path: str | Path, sheet: str | None = None) -> pd.DataFrame:
         raw = raw.iloc[1:]
     else:
         raw.columns = _dedupe([None] * raw.shape[1])
-    raw = raw.dropna(how="all")
+    raw = _drop_repeated_headers(raw.dropna(how="all"))
     return raw.infer_objects()
 
 

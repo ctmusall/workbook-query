@@ -2,27 +2,71 @@
 
 from __future__ import annotations
 
+import copy
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, QSortFilterProxyModel, Qt
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, QSortFilterProxyModel, QStringListModel, Qt
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
-    QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog,
+    QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QComboBox, QCompleter, QDialog, QDialogButtonBox,
+    QFileDialog,
     QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMainWindow,
-    QMessageBox, QPushButton, QRadioButton, QScrollArea, QSplitter, QTableView, QTableWidget, QTableWidgetItem,
+    QMenu, QMessageBox, QPushButton, QRadioButton, QScrollArea, QSplitter, QTableView, QTableWidget, QTableWidgetItem,
     QTabWidget, QToolBox, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 
 from . import __version__, loader
-from .conditions import ANY_SOURCE, LOGIC, NO_VALUE_OPERATORS, OPERATORS, Condition, Group
-from .query import JOIN_HOW, Query, QueryResult, Source, default_alias, load_query, run_query, save_query, \
-    unique_alias
+from .conditions import ANY_SOURCE, LOGIC, NO_VALUE_OPERATORS, OPERATORS, Condition, Group, column_key, \
+    parse_number, resolve_column, sort_columns
+from .query import JOIN_HOW, Query, QueryResult, Source, default_alias, is_provenance, load_query, run_query, \
+    save_query, unique_alias
 
 APP = "Workbook Query"
 ANY_LABEL = "Any sheet"
 WORKBOOK_FILTER = "Workbooks (*.xlsx *.xlsm *.xls *.csv *.tsv *.txt);;All files (*)"
+MAX_SUGGESTIONS = 1000
+
+
+def _is_blank(v) -> bool:
+    return v is None or (not isinstance(v, str) and pd.isna(v))
+
+
+def _display(v) -> str:
+    """A cell as the result tables show it."""
+    if _is_blank(v):
+        return ""
+    if isinstance(v, pd.Timestamp):
+        return v.strftime("%Y-%m-%d") if v == v.normalize() else str(v)
+    return str(v)
+
+
+def _value_text(v) -> str:
+    """A cell as a condition value: like :func:`_display`, but 5.0 reads as 5."""
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    return _display(v).strip()
+
+
+def _sort_key(text: str):
+    try:
+        number = parse_number(text)
+    except ValueError:
+        number = None
+    return (number is None, number or 0.0, text.casefold(), text)
+
+
+def _search_completer(parent, items=None) -> QCompleter:
+    """Case-insensitive, match-anywhere completion."""
+    comp = QCompleter(parent)
+    if items is not None:
+        comp.setModel(QStringListModel(list(items), comp))
+    comp.setCaseSensitivity(Qt.CaseInsensitive)
+    comp.setFilterMode(Qt.MatchContains)
+    comp.setCompletionMode(QCompleter.PopupCompletion)
+    return comp
 
 
 @dataclass
@@ -53,13 +97,9 @@ class FrameModel(QAbstractTableModel):
             return None
         v = self.df.iat[index.row(), index.column()]
         if role == Qt.DisplayRole:
-            if v is None or (not isinstance(v, str) and pd.isna(v)):
-                return ""
-            if isinstance(v, pd.Timestamp):
-                return v.strftime("%Y-%m-%d") if v == v.normalize() else str(v)
-            return str(v)
+            return _display(v)
         if role == Qt.UserRole:  # sort key
-            if v is None or (not isinstance(v, str) and pd.isna(v)):
+            if _is_blank(v):
                 return None
             return v if isinstance(v, (int, float)) else str(v)
         return None
@@ -104,6 +144,160 @@ class SheetPicker(QDialog):
                 if self.list.item(i).checkState() == Qt.Checked]
 
 
+class ColumnPicker(QDialog):
+    """Tick several columns at once; nothing happens until OK.
+
+    ``rows`` are (column, sheets that have it, initial state). A row starting partly checked
+    (ticked in some sheets only) keeps a third, "leave as is" state."""
+
+    def __init__(self, title: str, prompt: str, rows: list[tuple[str, list[str], Qt.CheckState]], parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.resize(420, 480)
+        lay = QVBoxLayout(self)
+        label = QLabel(prompt)
+        label.setWordWrap(True)
+        lay.addWidget(label)
+        self.search = QLineEdit()
+        self.search.setPlaceholderText("Search columns")
+        self.search.setClearButtonEnabled(True)
+        self.search.textChanged.connect(self._filter)
+        lay.addWidget(self.search)
+        self.list = QListWidget()
+        for col, sheets, state in rows:
+            n = len(sheets)
+            item = QListWidgetItem(f"{col}   ({n} sheet{'s' if n != 1 else ''})")
+            item.setData(Qt.UserRole, col)
+            item.setToolTip("In: " + ", ".join(sheets))
+            flags = item.flags() | Qt.ItemIsUserCheckable
+            if state == Qt.PartiallyChecked:
+                flags |= Qt.ItemIsUserTristate
+                item.setToolTip(item.toolTip() + "\nHalf-ticked: ticked in some of these sheets; left as is.")
+            item.setFlags(flags)
+            item.setCheckState(state)
+            self.list.addItem(item)
+        lay.addWidget(self.list)
+        row = QHBoxLayout()
+        all_btn, none_btn = QPushButton("All"), QPushButton("None")
+        all_btn.setToolTip("Tick every column shown")
+        none_btn.setToolTip("Untick every column shown")
+        all_btn.clicked.connect(lambda: self._set_shown(Qt.Checked))
+        none_btn.clicked.connect(lambda: self._set_shown(Qt.Unchecked))
+        row.addWidget(all_btn)
+        row.addWidget(none_btn)
+        row.addStretch()
+        lay.addLayout(row)
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        lay.addWidget(buttons)
+        self._lay = lay
+        self.search.setFocus()
+
+    def _items(self):
+        return [self.list.item(i) for i in range(self.list.count())]
+
+    def _filter(self, text: str):
+        needle = text.strip().casefold()
+        for item in self._items():
+            item.setHidden(bool(needle) and needle not in item.data(Qt.UserRole).casefold())
+
+    def _set_shown(self, state):
+        for item in self._items():
+            if not item.isHidden():
+                item.setCheckState(state)
+
+    def set_state(self, column: str, state):
+        for item in self._items():
+            if item.data(Qt.UserRole) == column:
+                item.setCheckState(state)
+
+    def states(self) -> dict[str, Qt.CheckState]:
+        return {item.data(Qt.UserRole): item.checkState() for item in self._items()}
+
+    def checked(self) -> list[str]:
+        return [c for c, st in self.states().items() if st == Qt.Checked]
+
+
+PLACE_SELECTED = "the selected group"
+PLACE_OR = "a new OR group (any column matches)"
+PLACE_AND = "a new AND group (every column matches)"
+PLACEMENTS = (PLACE_SELECTED, PLACE_OR, PLACE_AND)
+
+
+class SharedColumnPicker(ColumnPicker):
+    """:class:`ColumnPicker` plus the operator and value every picked column's condition gets, and
+    where the conditions go. ``values_for(columns)`` gives value suggestions for the ticked columns."""
+
+    def __init__(self, rows, values_for, parent=None):
+        super().__init__("Add for column", "Tick the columns to filter on. Each gets one condition that tests "
+                         "every sheet with that column, using the operator and value below.", rows, parent)
+        self._values_for = values_for
+        box = QGroupBox("Condition for every ticked column")
+        grid = QVBoxLayout(box)
+        row = QHBoxLayout()
+        self.op_box = _combo(OPERATORS, "=")
+        self.value_edit = QLineEdit()
+        self.value_edit.setPlaceholderText("value (lists: a, b, c) — can be left blank to fill in later")
+        row.addWidget(self.op_box)
+        row.addWidget(self.value_edit, 1)
+        grid.addLayout(row)
+        place = QHBoxLayout()
+        place.addWidget(QLabel("Put them in"))
+        self.place_box = _combo(PLACEMENTS, PLACE_SELECTED)
+        self.place_box.setToolTip("A new OR group matches rows where any of the columns matches; "
+                                  "a new AND group, rows where all of them do.")
+        place.addWidget(self.place_box, 1)
+        grid.addLayout(place)
+        self.error_label = QLabel()
+        self.error_label.setWordWrap(True)
+        self.error_label.setStyleSheet("color: #c0392b")
+        self.error_label.hide()
+        grid.addWidget(self.error_label)
+        self._lay.insertWidget(self._lay.count() - 1, box)
+        self.op_box.currentTextChanged.connect(self._op_changed)
+        self.list.itemChanged.connect(lambda *_: self._update_values())
+        self.value_edit.textChanged.connect(lambda *_: self.error_label.hide())
+        self._update_values()
+
+    def _op_changed(self, op: str):
+        self.value_edit.setEnabled(op not in NO_VALUE_OPERATORS)
+        self.error_label.hide()
+
+    def _update_values(self):
+        values = self._values_for(self.checked()) if self.checked() else []
+        self.value_edit.setCompleter(_search_completer(self.value_edit, values))
+
+    def expression(self) -> tuple[str, str]:
+        op = self.op_box.currentText()
+        return op, "" if op in NO_VALUE_OPERATORS else self.value_edit.text()
+
+    def group_logic(self) -> str | None:
+        """None for the selected group, else the new group's AND / OR."""
+        return {PLACE_OR: "OR", PLACE_AND: "AND"}.get(self.place_box.currentText())
+
+    def problem(self) -> str:
+        """Why OK can't go ahead, or ''. A blank value is allowed (filled in later in the tree)."""
+        if not self.checked():
+            return "Tick at least one column."
+        op, value = self.expression()
+        if not value.strip() and op not in NO_VALUE_OPERATORS:
+            return ""
+        try:
+            Condition(ANY_SOURCE, self.checked()[0], op, value).check_value()
+        except ValueError as exc:
+            return str(exc).split(": ", 1)[-1]
+        return ""
+
+    def accept(self):
+        msg = self.problem()
+        if msg:
+            self.error_label.setText(msg)
+            self.error_label.show()
+            return
+        super().accept()
+
+
 def _combo(items, current: str | None = None) -> QComboBox:
     box = QComboBox()
     box.addItems(list(items))
@@ -118,7 +312,7 @@ class ConditionsEditor(QGroupBox):
     """A tree of AND/OR groups and conditions. The tree's widgets are the state; edits that change its
     shape go through :meth:`group` -> change -> :meth:`set_group` so the widgets are always rebuilt cleanly."""
 
-    COLS = ("Group / Sheet", "Column", "Operator", "Value", "On")
+    COLS = ("Group / Sheet", "Name / Column", "Operator", "Value", "On")
 
     def __init__(self, window: "MainWindow"):
         super().__init__("Conditions")
@@ -138,13 +332,25 @@ class ConditionsEditor(QGroupBox):
         self.tree.setMinimumWidth(560)
         self.tree.setMinimumHeight(180)
         lay.addWidget(self.tree)
+        self._building = False
+        self.tree.itemCollapsed.connect(self._expansion_changed)
+        self.tree.itemExpanded.connect(self._expansion_changed)
         row = QHBoxLayout()
         self.add_cond_btn = QPushButton("Add condition")
+        self.add_cond_btn.setToolTip("Add a condition to the selected group, on the selected condition's "
+                                     "sheet and column")
+        self.add_shared_btn = QPushButton("Add for column…")
+        self.add_shared_btn.setToolTip("Pick columns that several sheets share; each gets one condition "
+                                       "that tests every sheet with that column")
         self.add_group_btn = QPushButton("Add group")
+        self.duplicate_btn = QPushButton("Duplicate")
+        self.duplicate_btn.setToolTip("Copy the selected condition or group (Ctrl+D)")
         self.remove_btn = QPushButton("Remove")
+        self.remove_btn.setToolTip("Remove the selected condition or group (Delete)")
         self.up_btn = QPushButton("Up")
         self.down_btn = QPushButton("Down")
-        for b in (self.add_cond_btn, self.add_group_btn, self.remove_btn, self.up_btn, self.down_btn):
+        for b in (self.add_cond_btn, self.add_shared_btn, self.add_group_btn, self.duplicate_btn, self.remove_btn,
+                  self.up_btn, self.down_btn):
             row.addWidget(b)
         row.addStretch()
         lay.addLayout(row)
@@ -154,6 +360,10 @@ class ConditionsEditor(QGroupBox):
         lay.addWidget(self.preview)
         self.add_cond_btn.clicked.connect(lambda: self.add_condition())
         self.add_group_btn.clicked.connect(lambda: self.add_group())
+        self.add_shared_btn.clicked.connect(lambda: self.pick_shared())
+        self.duplicate_btn.clicked.connect(lambda: self.duplicate())
+        QShortcut(QKeySequence("Ctrl+D"), self, self.duplicate, context=Qt.WidgetWithChildrenShortcut)
+        QShortcut(QKeySequence.Delete, self.tree, self.remove, context=Qt.WidgetShortcut)
         self.remove_btn.clicked.connect(lambda: self.remove())
         self.up_btn.clicked.connect(lambda: self.move(-1))
         self.down_btn.clicked.connect(lambda: self.move(1))
@@ -163,9 +373,11 @@ class ConditionsEditor(QGroupBox):
     def _source_labels(self) -> list[str]:
         return [ANY_LABEL] + self.win.aliases()
 
-    def _make_group_item(self, parent, group: Group) -> QTreeWidgetItem:
+    def _make_group_item(self, parent, group: Group, root: bool = False) -> QTreeWidgetItem:
         item = QTreeWidgetItem(parent)
         item.setData(0, Qt.UserRole, "group")
+        item._root = root
+        item._collapsed = group.collapsed and not root
         box = QWidget()
         lay = QHBoxLayout(box)
         lay.setContentsMargins(0, 0, 0, 0)
@@ -181,24 +393,145 @@ class ConditionsEditor(QGroupBox):
         negate.toggled.connect(self.changed)
         self.tree.setItemWidget(item, 0, box)
         item.setFirstColumnSpanned(False)
-        item._logic, item._negate = logic, negate
+        item._logic, item._negate, item._box = logic, negate, box
+        if not root:
+            self._make_group_extras(item, group)
         for sub in group.items:
             if isinstance(sub, Group):
                 self._make_group_item(item, sub)
             else:
                 self._make_condition_item(item, sub)
-        item.setExpanded(True)
         return item
+
+    def _make_group_extras(self, item: QTreeWidgetItem, group: Group):
+        """Name, On, and the collapsed group's bulk operator / value (shown only while collapsed)."""
+        name = QLineEdit(group.name)
+        name.setPlaceholderText("group name")
+        name.setToolTip("A label for this group (optional)")
+        name.textChanged.connect(self.changed)
+        on = QCheckBox()
+        on.setChecked(group.enabled)
+        on.setToolTip("Untick to switch the whole group off without deleting it")
+        on.toggled.connect(self._enabled_changed)
+        op = _combo(OPERATORS, "=")
+        op.setToolTip("Operator for every condition in this group")
+        value = QLineEdit()
+        value.setPlaceholderText("value for every condition")
+        value.setToolTip("Value for every condition in this group")
+        mixed = QLabel("<i>operators / values differ — expand to edit</i>")
+        op_cell, value_cell = QWidget(), QWidget()
+        for cell, widgets in ((op_cell, (op,)), (value_cell, (value, mixed))):
+            lay = QHBoxLayout(cell)
+            lay.setContentsMargins(0, 0, 0, 0)
+            for w in widgets:
+                lay.addWidget(w)
+                w.hide()
+        for col, w in ((1, name), (2, op_cell), (3, value_cell), (4, on)):
+            self.tree.setItemWidget(item, col, w)
+        item._name, item._on, item._bulk_op, item._bulk_value, item._mixed = name, on, op, value, mixed
+        item._bulk_cells = (op_cell, value_cell)
+        op.currentTextChanged.connect(lambda text: self._bulk_set(item, op=text))
+        value.textChanged.connect(lambda text: self._bulk_set(item, value=text))
+
+    # --- group state: collapse / bulk edit / on-off -------------------------
+    def _group_items(self, item=None) -> list[QTreeWidgetItem]:
+        """``item`` (default: the root) and every group under it."""
+        item = item or self.tree.topLevelItem(0)
+        out = [item]
+        for i in range(item.childCount()):
+            if item.child(i).data(0, Qt.UserRole) == "group":
+                out += self._group_items(item.child(i))
+        return out
+
+    def _condition_items(self, item) -> list[QTreeWidgetItem]:
+        out = []
+        for i in range(item.childCount()):
+            child = item.child(i)
+            out += self._condition_items(child) if child.data(0, Qt.UserRole) == "group" else [child]
+        return out
+
+    def _expansion_changed(self, item):
+        if not self._building and item.data(0, Qt.UserRole) == "group":
+            self._sync_bulk(item)
+
+    def _sync_bulk(self, item):
+        """While a group is collapsed, show one operator / value for all its conditions when they share
+        them, else a note that they differ."""
+        if item._root:
+            return
+        conds = self._condition_items(item)
+        shared = {(c._op.currentText(), c._value.text()) for c in conds}
+        collapsed = not item.isExpanded() and bool(conds)
+        uniform = collapsed and len(shared) == 1
+        op, value = item._bulk_op, item._bulk_value
+        if uniform:
+            (op_text, value_text), = shared
+            for w, setter, v in ((op, op.setCurrentText, op_text), (value, value.setText, value_text)):
+                w.blockSignals(True)
+                setter(v)
+                w.blockSignals(False)
+            value.setEnabled(op_text not in NO_VALUE_OPERATORS)
+            columns = {c._column.currentText() for c in conds}
+            sources = {c._source.currentText() for c in conds}
+            suggestions = set()
+            for c in conds:
+                src = c._source.currentText()
+                suggestions.update(self.win.values_for(ANY_SOURCE if src == ANY_LABEL else src,
+                                                       c._column.currentText()))
+            value.setCompleter(_search_completer(value, sorted(suggestions, key=_sort_key)[:MAX_SUGGESTIONS]))
+            value.setToolTip(f"Value for all {len(conds)} conditions in this group "
+                             f"({len(columns)} column{'s' if len(columns) != 1 else ''}, "
+                             f"{len(sources)} sheet choice{'s' if len(sources) != 1 else ''})")
+        op.setVisible(uniform)
+        value.setVisible(uniform)
+        item._mixed.setVisible(collapsed and not uniform)
+
+    def _bulk_set(self, item, op: str | None = None, value: str | None = None):
+        """Apply the collapsed group's operator or value to every condition in it."""
+        for c in self._condition_items(item):
+            if op is not None:
+                c._op.setCurrentText(op)
+            if value is not None:
+                c._value.setText(value)
+        if op is not None:
+            item._bulk_value.setEnabled(op not in NO_VALUE_OPERATORS)
+
+    def _enabled_changed(self, *_):
+        self._apply_enabled(self.tree.topLevelItem(0), True)
+        self.changed()
+
+    def _apply_enabled(self, item, on: bool):
+        """Grey out everything inside a switched-off group (its own On box stays usable)."""
+        if item.data(0, Qt.UserRole) == "group":
+            if not item._root:
+                item._on.setEnabled(on)
+                on = on and item._on.isChecked()
+                for w in (item._box, item._name, *item._bulk_cells):
+                    w.setEnabled(on)
+            for i in range(item.childCount()):
+                self._apply_enabled(item.child(i), on)
+            return
+        for w in (item._source, item._column, item._op, item._on):
+            w.setEnabled(on)
+        item._value.setEnabled(on and item._op.currentText() not in NO_VALUE_OPERATORS)
 
     def _make_condition_item(self, parent, cond: Condition) -> QTreeWidgetItem:
         item = QTreeWidgetItem(parent)
         item.setData(0, Qt.UserRole, "condition")
         src_label = ANY_LABEL if cond.source == ANY_SOURCE else cond.source
         source = _combo(self._source_labels(), src_label)
-        column = _combo(self.win.columns_for(cond.source), cond.column or None)
+        column = QComboBox()
+        column.setEditable(True)
+        column.setInsertPolicy(QComboBox.NoInsert)
+        column.setCompleter(_search_completer(column))
+        column.completer().setModel(column.model())
+        column.setToolTip("Type to search the columns")
+        self._fill_columns(column, cond.source, cond.column or None)
         op = _combo(OPERATORS, cond.op)
         value = QLineEdit(cond.value)
         value.setPlaceholderText("value (lists: a, b, c)")
+        value.setToolTip("Suggestions come from the column's values. Enter runs the query.")
+        value.returnPressed.connect(lambda: self.win.run())
         on = QCheckBox()
         on.setChecked(cond.enabled)
         for col, w in enumerate((source, column, op, value, on)):
@@ -206,33 +539,73 @@ class ConditionsEditor(QGroupBox):
         item._source, item._column, item._op, item._value, item._on = source, column, op, value, on
         value.setEnabled(cond.op not in NO_VALUE_OPERATORS)
 
-        def source_changed(text):
-            alias = ANY_SOURCE if text == ANY_LABEL else text
+        def alias():
+            return ANY_SOURCE if source.currentText() == ANY_LABEL else source.currentText()
+
+        def update_values():
+            value.setCompleter(_search_completer(value, self.win.values_for(alias(), column.currentText())))
+
+        def source_changed(_text):
             keep = column.currentText()
             column.blockSignals(True)
-            column.clear()
-            column.addItems(self.win.columns_for(alias))
+            self._fill_columns(column, alias(), None)
             if column.findText(keep) >= 0:
                 column.setCurrentText(keep)
             column.blockSignals(False)
+            update_values()
+            self.changed()
+
+        def column_changed(_text):
+            update_values()
             self.changed()
 
         def op_changed(text):
-            value.setEnabled(text not in NO_VALUE_OPERATORS)
+            value.setEnabled(text not in NO_VALUE_OPERATORS and op.isEnabled())
             self.changed()
 
+        update_values()
         source.currentTextChanged.connect(source_changed)
         op.currentTextChanged.connect(op_changed)
-        column.currentTextChanged.connect(self.changed)
+        column.currentTextChanged.connect(column_changed)
         value.textChanged.connect(self.changed)
         on.toggled.connect(self.changed)
         return item
 
+    def _fill_columns(self, box: QComboBox, alias: str, current: str | None):
+        """Put ``alias``'s columns in ``box``; for any sheet, each one's tooltip names the sheets that have it."""
+        box.clear()
+        box.addItems(sort_columns(self.win.columns_for(alias)))
+        if alias == ANY_SOURCE:
+            for i in range(box.count()):
+                box.setItemData(i, "In: " + ", ".join(self.win.sheets_with(box.itemText(i))), Qt.ToolTipRole)
+        if current is not None:
+            if box.findText(current) < 0:
+                box.addItem(current)
+            box.setCurrentText(current)
+
+    def shared_picker(self) -> "SharedColumnPicker":
+        rows = [(col, self.win.sheets_with(col), Qt.Unchecked) for col, _ in self.win.shared_columns()]
+        return SharedColumnPicker(rows, self._values_of, self)
+
+    def _values_of(self, columns: list[str]) -> list[str]:
+        seen = {v for c in columns for v in self.win.values_for(ANY_SOURCE, c)}
+        return sorted(seen, key=_sort_key)[:MAX_SUGGESTIONS]
+
+    def pick_shared(self) -> list[Condition]:
+        dlg = self.shared_picker()
+        if dlg.exec() != QDialog.Accepted:
+            return []
+        op, value = dlg.expression()
+        return self.add_shared_many(dlg.checked(), op, value, dlg.group_logic())
+
     # --- model <-> widgets --------------------------------------------------
     def _read(self, item: QTreeWidgetItem):
         if item.data(0, Qt.UserRole) == "group":
-            return Group(item._logic.currentText(), [self._read(item.child(i)) for i in range(item.childCount())],
-                         item._negate.isChecked())
+            items = [self._read(item.child(i)) for i in range(item.childCount())]
+            if item._root:
+                return Group(item._logic.currentText(), items, item._negate.isChecked())
+            return Group(item._logic.currentText(), items, item._negate.isChecked(), item._name.text(),
+                         item._on.isChecked(), not item.isExpanded())
         src = item._source.currentText()
         return Condition(ANY_SOURCE if src == ANY_LABEL else src, item._column.currentText() or "?",
                          item._op.currentText(), item._value.text(), item._on.isChecked())
@@ -240,20 +613,37 @@ class ConditionsEditor(QGroupBox):
     def group(self) -> Group:
         return self._read(self.tree.topLevelItem(0))
 
-    def set_group(self, group: Group, select: list[int] | None = None):
+    def set_group(self, group: Group, select: list[int] | None = None, reveal: bool = True):
+        """Rebuild the tree from ``group`` and select the item at path ``select``. With ``reveal``, groups
+        around it open so it shows (after an edit); otherwise collapsed groups stay shut and the
+        outermost one around it is selected instead."""
+        self._building = True
         self.tree.clear()
-        root = self._make_group_item(self.tree, group)
-        root._root = True
-        self.tree.expandAll()
+        self._make_group_item(self.tree, group, root=True)
+        groups = self._group_items()
+        for g in groups:
+            g.setExpanded(not g._collapsed)
+        self._building = False
         if select is not None:
             item = self._item_at(select)
             if item is not None:
+                parent = item.parent()
+                while parent is not None:
+                    if reveal:
+                        parent.setExpanded(True)
+                    elif not parent.isExpanded():
+                        item = parent
+                    parent = parent.parent()
                 self.tree.setCurrentItem(item)
+        for g in groups:
+            self._sync_bulk(g)
+        self._apply_enabled(self.tree.topLevelItem(0), True)
+        self.add_shared_btn.setEnabled(bool(self.win.shared_columns()))
         self.changed()
 
     def refresh(self):
         """Rebuild after sources change (new sheet names / columns in the combos)."""
-        self.set_group(self.group(), self._path(self.tree.currentItem()))
+        self.set_group(self.group(), self._path(self.tree.currentItem()), reveal=False)
 
     def changed(self, *_):
         try:
@@ -295,16 +685,65 @@ class ConditionsEditor(QGroupBox):
         return model, (sel if isinstance(node, Group) else sel[:-1]), sel
 
     # --- edits --------------------------------------------------------------
+    def _default_condition(self, model: Group, sel: list[int]) -> Condition:
+        """Same sheet and column as the selected condition; else any sheet (with a column several sheets
+        share, if there is one) when there are several sheets; else the only sheet."""
+        node = self._node(model, sel)
+        if isinstance(node, Condition):
+            return Condition(node.source, node.column, "=", "")
+        aliases = self.win.aliases()
+        src = ANY_SOURCE if len(aliases) != 1 else aliases[0]
+        shared = self.win.shared_columns()
+        cols = [shared[0][0]] if src == ANY_SOURCE and shared else self.win.columns_for(src)
+        return Condition(src, cols[0] if cols else "?", "=", "")
+
     def add_condition(self, cond: Condition | None = None) -> Condition:
+        model, gpath, sel = self._target()
         if cond is None:
-            aliases = self.win.aliases()
-            src = aliases[0] if aliases else ANY_SOURCE
-            cols = self.win.columns_for(src)
-            cond = Condition(src, cols[0] if cols else "?", "=", "")
-        model, gpath, _ = self._target()
+            cond = self._default_condition(model, sel)
         self._node(model, gpath).items.append(cond)
-        self.set_group(model, gpath + [len(self._node(model, gpath).items) - 1])
+        path = gpath + [len(self._node(model, gpath).items) - 1]
+        self.set_group(model, path)
+        item = self._item_at(path)
+        if item is not None and item._value.isEnabled():
+            item._value.setFocus()
         return cond
+
+    def add_shared(self, column: str) -> Condition:
+        """A condition on ``column`` of every sheet that has it."""
+        return self.add_condition(Condition(ANY_SOURCE, column, "=", ""))
+
+    def add_shared_many(self, columns: list[str], op: str = "=", value: str = "",
+                        new_group: str | None = None) -> list[Condition]:
+        """One any-sheet condition per column, all with ``op`` and ``value``: in the selected group, or in a
+        new AND / OR group (``new_group``) added to it. The first condition is selected; when its value is
+        still blank its value box gets focus."""
+        added = [Condition(ANY_SOURCE, col, op, value) for col in columns]
+        if not added:
+            return added
+        model, gpath, _ = self._target()
+        group = self._node(model, gpath)
+        if new_group:
+            group.items.append(Group(new_group, list(added)))
+            first = gpath + [len(group.items) - 1, 0]
+        else:
+            group.items.extend(added)
+            first = gpath + [len(group.items) - len(added)]
+        self.set_group(model, first)
+        item = self._item_at(first)
+        if item is not None and item._value.isEnabled() and not value.strip():
+            item._value.setFocus()
+        return added
+
+    def duplicate(self) -> bool:
+        """Insert a copy of the selected condition or group right after it."""
+        model, _, sel = self._target()
+        if not sel:
+            return False
+        items = self._node(model, sel[:-1]).items
+        items.insert(sel[-1] + 1, copy.deepcopy(items[sel[-1]]))
+        self.set_group(model, sel[:-1] + [sel[-1] + 1])
+        return True
 
     def add_group(self, logic: str = "OR") -> None:
         model, gpath, _ = self._target()
@@ -345,7 +784,7 @@ class ConditionsEditor(QGroupBox):
                     it.source = new
         model = self.group()
         walk(model)
-        self.set_group(model, self._path(self.tree.currentItem()))
+        self.set_group(model, self._path(self.tree.currentItem()), reveal=False)
 
 
 class OutputsEditor(QGroupBox):
@@ -354,6 +793,14 @@ class OutputsEditor(QGroupBox):
     def __init__(self):
         super().__init__("Output columns")
         lay = QVBoxLayout(self)
+        top = QHBoxLayout()
+        self.all_sheets_btn = QPushButton("Choose for all sheets…")
+        self.all_sheets_btn.setToolTip("Tick or untick a column in every sheet that has it, all at once")
+        self.all_sheets_btn.clicked.connect(lambda: self.pick_all_sheets())
+        self.all_sheets_btn.setEnabled(False)
+        top.addWidget(self.all_sheets_btn)
+        top.addStretch()
+        lay.addLayout(top)
         self.toolbox = QToolBox()
         self.toolbox.setMinimumHeight(200)
         lay.addWidget(self.toolbox)
@@ -398,6 +845,7 @@ class OutputsEditor(QGroupBox):
             lay.addLayout(row)
             self.toolbox.addItem(page, alias)
             self.lists[alias] = lst
+        self.all_sheets_btn.setEnabled(bool(self.lists))
 
     @staticmethod
     def _set_all(lst: QListWidget, on: bool):
@@ -408,6 +856,53 @@ class OutputsEditor(QGroupBox):
         lst = self.lists[alias]
         for i in range(lst.count()):
             lst.item(i).setCheckState(Qt.Checked if lst.item(i).text() in columns else Qt.Unchecked)
+
+    def _item(self, alias: str, column: str) -> QListWidgetItem | None:
+        lst = self.lists[alias]
+        names = [lst.item(i).text() for i in range(lst.count())]
+        name = resolve_column(names, column)
+        return None if name is None else lst.item(names.index(name))
+
+    def column_states(self) -> list[tuple[str, list[str], Qt.CheckState]]:
+        """Every column of every sheet (once, ignoring case and spaces): the sheets that have it, and
+        whether it's ticked in all of them, some or none."""
+        rows, seen = [], set()
+        for lst in self.lists.values():
+            for i in range(lst.count()):
+                col = lst.item(i).text()
+                if column_key(col) in seen:
+                    continue
+                seen.add(column_key(col))
+                sheets = [a for a in self.lists if self._item(a, col) is not None]
+                ticked = sum(self._item(a, col).checkState() == Qt.Checked for a in sheets)
+                state = Qt.Checked if ticked == len(sheets) else Qt.Unchecked if not ticked else Qt.PartiallyChecked
+                rows.append((col, sheets, state))
+        return rows
+
+    def apply_states(self, states: dict[str, Qt.CheckState]):
+        """Tick (or untick) each column in every sheet that has it; partly-checked columns stay as they are."""
+        for col, state in states.items():
+            if state == Qt.PartiallyChecked:
+                continue
+            for alias in self.lists:
+                item = self._item(alias, col)
+                if item is not None:
+                    item.setCheckState(state)
+
+    def all_sheets_picker(self) -> ColumnPicker:
+        rows = self.column_states()
+        order = {c: i for i, c in enumerate(sort_columns(r[0] for r in rows))}
+        rows.sort(key=lambda r: order[r[0]])
+        return ColumnPicker("Output columns for all sheets",
+                            "Tick the columns to output. Each applies to every sheet that has it; "
+                            "a half-ticked column is left as it is.", rows, self)
+
+    def pick_all_sheets(self) -> bool:
+        dlg = self.all_sheets_picker()
+        if dlg.exec() != QDialog.Accepted:
+            return False
+        self.apply_states(dlg.states())
+        return True
 
     def outputs(self) -> dict[str, list[str]]:
         return {alias: [lst.item(i).text() for i in range(lst.count())
@@ -425,6 +920,7 @@ class MainWindow(QMainWindow):
         self.entries: list[Entry] = []
         self.result: QueryResult | None = None
         self._updating = False
+        self._values_cache: dict[tuple[str, str], list[str]] = {}
 
         # --- left: sources, mode, conditions, outputs ---
         left = QWidget()
@@ -540,13 +1036,96 @@ class MainWindow(QMainWindow):
         return next((e for e in self.entries if e.source.alias == alias), None)
 
     def columns_for(self, alias: str) -> list[str]:
+        """A sheet's columns; for any sheet, every sheet's columns, once each (ignoring case and spaces)."""
         if alias == ANY_SOURCE:
-            out = []
+            out, seen = [], set()
             for e in self.entries:
-                out += [c for c in e.columns if c not in out]
+                for c in e.columns:
+                    if column_key(c) not in seen:
+                        seen.add(column_key(c))
+                        out.append(c)
             return out
         e = self.entry(alias)
         return e.columns if e else []
+
+    def sheets_with(self, column: str) -> list[str]:
+        """Names of the sheets that have ``column`` (ignoring case and surrounding spaces)."""
+        return [e.source.alias for e in self.entries if resolve_column(e.columns, column) is not None]
+
+    def shared_columns(self) -> list[tuple[str, int]]:
+        """(column, number of sheets) for each column found in more than one sheet."""
+        if len(self.entries) < 2:
+            return []
+        out = []
+        for c in sort_columns(self.columns_for(ANY_SOURCE)):
+            n = len(self.sheets_with(c))
+            if n > 1:
+                out.append((c, n))
+        return out
+
+    def values_for(self, alias: str, column: str) -> list[str]:
+        """Distinct non-blank values of ``column`` in sheet ``alias`` (or every sheet with it), sorted."""
+        cache_key = (alias, column)
+        if cache_key not in self._values_cache:
+            entries = self.entries if alias == ANY_SOURCE else [e for e in self.entries if e.source.alias == alias]
+            seen = set()
+            for e in entries:
+                col = resolve_column(e.columns, column)
+                if col is None:
+                    continue
+                for v in e.frame[col]:
+                    if not _is_blank(v):
+                        text = _value_text(v)
+                        if text:
+                            seen.add(text)
+            self._values_cache[cache_key] = sorted(seen, key=_sort_key)[:MAX_SUGGESTIONS]
+        return self._values_cache[cache_key]
+
+    def condition_target(self, column: str) -> tuple[str, str] | None:
+        """(source, column) a condition on result column ``column`` should test, or None when it can't
+        be tested (provenance and key columns). Shared columns test every sheet that has them."""
+        if is_provenance(column):
+            return None
+        if self.result is not None and self.result.query.mode == "join":
+            for a in sorted(self.aliases(), key=len, reverse=True):
+                if column.startswith(f"{a}."):
+                    return a, column[len(a) + 1:]
+            return None
+        sheets = self.sheets_with(column)
+        if not sheets:
+            return None
+        return (ANY_SOURCE if len(sheets) > 1 else sheets[0]), column
+
+    def cell_conditions(self, column: str, value) -> list[Condition]:
+        """Conditions offered for a result cell: = and <> its value, or is (not) blank."""
+        target = self.condition_target(column)
+        if target is None:
+            return []
+        src, col = target
+        text = _value_text(value)
+        if not text:
+            return [Condition(src, col, "is blank"), Condition(src, col, "is not blank")]
+        return [Condition(src, col, "=", text), Condition(src, col, "<>", text)]
+
+    def add_condition_from_result(self, cond: Condition):
+        self.conditions.add_condition(cond)
+        self.status_label.setText(f"Added condition: {cond.describe()}. Run the query to apply it.")
+
+    def _result_menu(self, view: QTableView, pos):
+        index = view.indexAt(pos)
+        if not index.isValid():
+            return
+        proxy = view.model()
+        src = proxy.mapToSource(index)
+        df = proxy.sourceModel().df
+        conds = self.cell_conditions(str(df.columns[src.column()]), df.iat[src.row(), src.column()])
+        if not conds:
+            return
+        menu = QMenu(view)
+        for cond in conds:
+            act = menu.addAction(f"Add condition: {cond.describe()}")
+            act.triggered.connect(lambda _=False, c=cond: self.add_condition_from_result(c))
+        menu.exec(view.viewport().mapToGlobal(pos))
 
     def _update_buttons(self):
         has = bool(self.entries)
@@ -621,7 +1200,7 @@ class MainWindow(QMainWindow):
             item.setFlags(item.flags() & ~Qt.ItemIsEditable)
             item.setToolTip(e.source.path)
             self.src_table.setItem(r, col, item)
-        key = _combo(e.columns, e.source.key)
+        key = _combo(sort_columns(e.columns), e.source.key)
         key.currentTextChanged.connect(lambda text, e=e: setattr(e.source, "key", text))
         self.src_table.setCellWidget(r, 3, key)
         self.src_table.resizeColumnsToContents()
@@ -658,10 +1237,12 @@ class MainWindow(QMainWindow):
         keep = self.outputs.outputs()
         keep[new] = keep.pop(old, None)
         e.source.alias = new
+        self._values_cache.clear()
         self.outputs.rebuild(self.entries, {k: v for k, v in keep.items() if v is not None})
         self.conditions.rename_source(old, new)
 
     def _sources_changed(self):
+        self._values_cache.clear()
         self.outputs.rebuild(self.entries)
         self.conditions.refresh()
         n = len(self.entries)
@@ -683,6 +1264,7 @@ class MainWindow(QMainWindow):
     def apply_query(self, query: Query) -> bool:
         """Replace everything with ``query``'s sources, conditions and outputs."""
         self.entries = []
+        self._values_cache.clear()
         self.src_table.setRowCount(0)
         ok = True
         for s in query.sources:
@@ -757,6 +1339,9 @@ class MainWindow(QMainWindow):
             view.sortByColumn(-1, Qt.AscendingOrder)
             view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
             view.resizeColumnsToContents()
+            view.setContextMenuPolicy(Qt.CustomContextMenu)
+            view.setToolTip("Right-click a cell to add a condition on its value")
+            view.customContextMenuRequested.connect(lambda pos, v=view: self._result_menu(v, pos))
             self.tabs.addTab(view, f"{name} ({len(df)})")
         self.charts.set_result(result)
         counts = ", ".join(f"{n}: {len(df)} row{'s' if len(df) != 1 else ''}" for n, df in result.tables.items())
