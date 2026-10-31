@@ -1,0 +1,42 @@
+# PyInstaller spec: builds two single-file executables from one analysis.
+#   wbquery      - windowed GUI (double-click; drop workbooks onto it to open them)
+#   wbquery-cli  - console build for scripting / batch use
+# Build with:  pyinstaller --noconfirm wbquery.spec
+
+# Qt modules the app never uses; excluding them keeps the executable smaller.
+excludes = [
+    "tkinter", "PySide6.QtWebEngineCore", "PySide6.QtWebEngineWidgets", "PySide6.Qt3DCore",
+    "PySide6.QtQuick", "PySide6.QtQml", "PySide6.QtMultimedia", "PySide6.QtPdf", "PySide6.QtCharts",
+    "PySide6.QtDataVisualization", "PySide6.QtBluetooth", "PySide6.QtNetworkAuth", "PySide6.QtSql",
+    "PySide6.QtTest", "PyQt5", "PyQt6", "IPython", "pytest", "matplotlib", "scipy",
+]
+
+
+def make_analysis(script, gui):
+    return Analysis(
+        [script],
+        pathex=["."],
+        hiddenimports=["openpyxl"],
+        # The console build never imports Qt; leaving it out saves ~100 MB.
+        excludes=excludes if gui else excludes + ["PySide6", "shiboken6"],
+        noarchive=False,
+    )
+
+
+def make_exe(a, name, console):
+    pyz = PYZ(a.pure)
+    return EXE(
+        pyz, a.scripts, a.binaries, a.datas, [],
+        name=name,
+        console=console,
+        upx=False,
+        strip=False,
+        debug=False,
+    )
+
+
+gui = make_analysis("scripts/run_gui.py", gui=True)
+make_exe(gui, "wbquery", console=False)
+
+cli = make_analysis("scripts/run_cli.py", gui=False)
+make_exe(cli, "wbquery-cli", console=True)

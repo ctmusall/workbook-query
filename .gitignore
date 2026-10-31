@@ -1,0 +1,12 @@
+.venv/
+build/
+dist/
+__pycache__/
+*.egg-info/
+.coverage
+.pytest_cache/
+out/
+
+# Local data (kept out of version control)
+*.xlsx
+!tests/data/*.xlsx
