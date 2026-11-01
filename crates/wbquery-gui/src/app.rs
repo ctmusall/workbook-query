@@ -288,6 +288,20 @@ impl WbqApp {
             if ui.button("Down").clicked() {
                 self.state.move_selected(1);
             }
+            if ui
+                .add_enabled(self.state.can_move_out(), egui::Button::new("Out"))
+                .on_hover_text("Move the selected condition or group out of its group")
+                .clicked()
+            {
+                self.state.move_out();
+            }
+            if ui
+                .add_enabled(self.state.can_move_in(), egui::Button::new("In"))
+                .on_hover_text("Move the selected condition or group into the group just above it")
+                .clicked()
+            {
+                self.state.move_in();
+            }
         });
         let ev = conditions_tree(ui, &mut self.state);
         if let Some(sel) = ev.select {

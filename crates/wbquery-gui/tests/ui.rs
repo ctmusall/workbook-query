@@ -194,6 +194,28 @@ fn color_picker_opens_and_sets_a_color() {
 }
 
 #[test]
+fn pressing_a_rows_widget_selects_the_row() {
+    let mut a = app();
+    a.state.conditions.items.push(Node::Cond(Condition::new("*", "Person 1", "=", "KSG").unwrap()));
+    let mut h = harness(a);
+    h.run();
+    assert_eq!(h.state().state.selected, None);
+    h.get_by_label("Column: Person 1").click();
+    h.run();
+    assert_eq!(h.state().state.selected, Some(vec![1]));
+    h.key_press(egui::Key::Escape);
+    h.run();
+    h.get_by_label("Operator: <>").click();
+    h.run();
+    assert_eq!(h.state().state.selected, Some(vec![0]));
+    // Choosing from the open list (drawn over the row below) keeps this row selected.
+    h.get_all_by_label("contains").last().unwrap().click();
+    h.run();
+    assert_eq!(h.state().state.selected, Some(vec![0]));
+    assert_eq!(first_condition(&h).op, "contains");
+}
+
+#[test]
 fn errors_show_in_a_dialog() {
     let mut a = WbqApp::new(AppState::default());
     a.state.error("Something odd <> '0'");

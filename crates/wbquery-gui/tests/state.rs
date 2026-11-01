@@ -156,6 +156,39 @@ fn condition_editing() {
 }
 
 #[test]
+fn move_out_of_and_into_groups() {
+    let mut s = loaded();
+    // [A, (B, (C))]: a group nested in a group.
+    s.conditions = Group::and(vec![
+        cond("lots", "Status", "=", "A"),
+        Node::Group(Group::or(vec![
+            cond("lots", "Status", "=", "B"),
+            Node::Group(Group::and(vec![cond("lots", "Status", "=", "C")])),
+        ])),
+    ]);
+    let values =
+        |s: &AppState| s.conditions.conditions(false).iter().map(|c| c.value.clone()).collect::<Vec<_>>();
+    // The inner group out of its parent: now [A, (B), (C)].
+    s.selected = Some(vec![1, 1]);
+    assert!(s.can_move_out() && s.move_out());
+    assert_eq!(s.selected, Some(vec![2]));
+    assert!(matches!(&s.conditions.items[2], Node::Group(g) if g.items.len() == 1));
+    assert!(!s.can_move_out()); // already at the top
+    assert!(!s.move_out());
+    // And back in, into the group above it: [A, (B, (C))].
+    assert!(s.can_move_in() && s.move_in());
+    assert_eq!(s.selected, Some(vec![1, 1]));
+    assert_eq!(values(&s), ["A", "B", "C"]);
+    // A condition into the group above it; nothing above A to move into.
+    s.selected = Some(vec![0]);
+    assert!(!s.can_move_in() && !s.move_in());
+    s.selected = Some(vec![1, 1, 0]);
+    assert!(s.move_out());
+    assert_eq!(s.selected, Some(vec![1, 2]));
+    assert_eq!(values(&s), ["A", "B", "C"]);
+}
+
+#[test]
 fn shared_columns_and_add_for_column() {
     let mut s = loaded();
     let added = s.add_shared_many(&["Lot".into()], "in", "A1, A2", Some("OR"), "#FF0000");

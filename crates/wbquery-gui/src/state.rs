@@ -660,6 +660,58 @@ impl AppState {
         true
     }
 
+    /// Move the selected condition or group out of its group, to just after that group.
+    pub fn move_out(&mut self) -> bool {
+        let (_, sel) = self.target();
+        if sel.len() < 2 {
+            return false; // already at the top level
+        }
+        let (last, parent) = sel.split_last().expect("non-empty");
+        let (parent_index, grandparent) = parent.split_last().expect("nested");
+        let item = tree::group_mut(&mut self.conditions, parent).expect("parent group").items.remove(*last);
+        let g = tree::group_mut(&mut self.conditions, grandparent).expect("grandparent group");
+        g.items.insert(parent_index + 1, item);
+        let mut path = grandparent.to_vec();
+        path.push(parent_index + 1);
+        self.selected = Some(path);
+        true
+    }
+
+    /// Move the selected condition or group into the group just above it (as its last item).
+    pub fn move_in(&mut self) -> bool {
+        let (_, sel) = self.target();
+        let Some((last, parent)) = sel.split_last() else { return false };
+        if *last == 0 {
+            return false;
+        }
+        let g = tree::group_mut(&mut self.conditions, parent).expect("parent group");
+        if !matches!(g.items[last - 1], Node::Group(_)) {
+            return false;
+        }
+        let item = g.items.remove(*last);
+        let Node::Group(target) = &mut g.items[last - 1] else { unreachable!() };
+        target.items.push(item);
+        target.collapsed = false;
+        let mut path = parent.to_vec();
+        path.extend([last - 1, target.items.len() - 1]);
+        self.selected = Some(path);
+        true
+    }
+
+    /// Whether [`AppState::move_out`] / [`AppState::move_in`] would do anything.
+    pub fn can_move_out(&self) -> bool {
+        self.target().1.len() >= 2
+    }
+
+    pub fn can_move_in(&self) -> bool {
+        let (_, sel) = self.target();
+        match sel.split_last() {
+            Some((last, parent)) if *last > 0 => tree::group(&self.conditions, parent)
+                .is_some_and(|g| matches!(g.items.get(last - 1), Some(Node::Group(_)))),
+            _ => false,
+        }
+    }
+
     /// (source, column) a condition on result column `column` should test, or None when it can't be
     /// tested (provenance and key columns). Shared columns test every sheet that has them.
     pub fn condition_target(&self, column: &str) -> Option<(String, String)> {

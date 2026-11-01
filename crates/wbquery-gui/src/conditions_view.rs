@@ -113,7 +113,7 @@ fn draw_group(
             });
         })
     });
-    if row.response.clicked() {
+    if pressed_on(ui, row.response.rect) {
         events.select = Some(path.to_vec());
     }
     if g.collapsed && !root {
@@ -270,9 +270,18 @@ fn draw_condition(
             });
         })
     });
-    if row.response.clicked() {
+    if pressed_on(ui, row.response.rect) {
         events.select = Some(path.to_vec());
     }
+}
+
+/// A press anywhere on the row (its widgets included) selects it; presses in a popup over it don't.
+fn pressed_on(ui: &Ui, rect: egui::Rect) -> bool {
+    let Some(pos) = ui.input(|i| if i.pointer.any_pressed() { i.pointer.press_origin() } else { None })
+    else {
+        return false;
+    };
+    rect.contains(pos) && ui.ctx().layer_id_at(pos) == Some(ui.layer_id())
 }
 
 /// Text for the live "Where:" line.
