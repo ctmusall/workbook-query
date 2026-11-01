@@ -100,21 +100,17 @@ pub fn to_pdf(svg: &str) -> Result<Vec<u8>, SaveError> {
         .map_err(|e| SaveError(format!("Couldn't write the PDF: {e}")))
 }
 
-/// `path` with a known chart extension; anything else gets `.png` added.
+/// `path` with a known chart extension; anything else becomes `.png` (replacing another extension).
 pub fn chart_path(path: impl AsRef<Path>) -> (PathBuf, Format) {
     let path = path.as_ref();
     match Format::from_path(path) {
         Some(f) => (path.to_path_buf(), f),
-        None => {
-            let mut s = path.as_os_str().to_owned();
-            s.push(".png");
-            (PathBuf::from(s), Format::Png)
-        }
+        None => (path.with_extension("png"), Format::Png),
     }
 }
 
 /// Save `chart` as PNG, SVG or PDF, chosen by the file extension (none or another one: PNG, with
-/// `.png` added). `size` is in inches.
+/// `.png` in its place). `size` is in inches.
 pub fn save(chart: &Chart, path: impl AsRef<Path>, size: (f64, f64)) -> Result<Saved, SaveError> {
     let (path, format) = chart_path(path);
     let rendered = render_svg(chart, size.0 * DPI, size.1 * DPI);

@@ -172,18 +172,20 @@ The app icon (`wbquery/assets/icon.png` and `icon.ico`) is drawn by `scripts/mak
 
 ## Rust port (in progress)
 
-The app is being ported to Rust (`crates/`). The engine, the command line and the charts are done; the desktop app
-(egui) comes next, and the Python version stays the released one until it is finished.
+The app has been ported to Rust (`crates/`): the engine, the command line, the charts and the desktop app (egui).
+The Python version stays the released one until the switch-over.
 
 | Crate | What it is |
 |---|---|
 | `wbquery-core` | loading sheets, conditions, independent / join queries, Excel and HTML export |
 | `wbquery-charts` | the nine chart types: what to plot (series, bars, limits, notes), drawn to SVG, PNG (resvg) or PDF (svg2pdf) |
 | `wbquery-cli` | `wbquery-cli`, with the same options, messages and exit codes as the Python CLI |
+| `wbquery-gui` | `wbquery`, the desktop app: the same window as the Python app; started with options, it runs the command line |
 
 ```bash
 cargo test --workspace                       # unit, parity and CLI tests
 cargo run -p wbquery-cli -- -q query.json    # run the CLI
+cargo run -p wbquery-gui                     # run the app (cargo run -p wbquery-gui -- book.xlsx opens a workbook)
 just ci                                      # everything CI checks: fmt, clippy, cargo-deny, tests, smoke test
 ```
 
@@ -197,6 +199,11 @@ The Rust tests check against those records, so the two give the same answers.
 
 Charts are drawn with the app's font (Ubuntu Light, embedded; licence in `licenses/`).
 
+**App tests.** `crates/wbquery-gui/tests/state.rs` drives the window's logic the way the Python GUI tests did
+(adding sheets, editing conditions, running, exporting, saving and loading, charts); `tests/ui.rs` clicks the real
+window headless with egui_kittest. `WBQ_UI_DIR=some/dir cargo test -p wbquery-gui --test ui` also saves
+screenshots (needs a GPU or a software Vulkan / GL driver).
+
 **Known differences from the Python version:**
 
 - `.xls` files open (the Python version needed `xlrd`, which wasn't installed).
@@ -207,5 +214,7 @@ Charts are drawn with the app's font (Ubuntu Light, embedded; licence in `licens
 - A blank cell in a date column never matches a numeric condition (the Python version matched it with `<>` and
   `<`).
 - `--print` lays the tables out in its own format.
+- In the app, charts zoom and pan with the mouse (scroll, drag, double-click to reset) instead of matplotlib's
+  toolbar, and the conditions editor is drawn by egui; the controls and what they do are the same.
 - Charts plot the same data, but their axes are laid out by the Rust renderer: tick spacing differs a little, and
   large numbers read `20M` rather than matplotlib's `2` with a `1e7` offset.

@@ -12,6 +12,11 @@ ignore = [
     # saved charts. Revisit when svg2pdf moves to a maintained font stack.
     { id = "RUSTSEC-2026-0206", reason = "rustybuzz, via usvg 0.45 (chart text)" },
     { id = "RUSTSEC-2026-0192", reason = "ttf-parser, via usvg 0.45 and chart text measurement" },
+    # Merged into zbus 6 (not vulnerable); used by the Linux screen-reader bridge (accesskit / AT-SPI) and
+    # file dialogs (xdg-portal). Goes away when egui / rfd move to zbus 6.
+    { id = "RUSTSEC-2026-0370", reason = "zvariant, via accesskit_unix and rfd" },
+    { id = "RUSTSEC-2026-0371", reason = "zbus_names, via accesskit_unix and rfd" },
+    { id = "RUSTSEC-2026-0372", reason = "zvariant_derive, via accesskit_unix and rfd" },
 ]
 
 [licenses]

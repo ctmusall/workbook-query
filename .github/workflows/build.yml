@@ -59,10 +59,19 @@ jobs:
           grep -q "Joined: 1 row(s)" smoke.log
           test -s smoke_out/results.xlsx && test -s smoke_out/results.html
 
+      - name: Smoke-test app executable (options run the command line)
+        shell: bash
+        run: |
+          target/release/wbquery --version
+          target/release/wbquery -q tests/golden/smoke/query.json -o smoke_out/app --formats html | grep -q "Joined: 1 row(s)"
+
       - uses: actions/upload-artifact@v4
         with:
           name: wbquery-rust-${{ runner.os }}
-          path: target/release/wbquery-cli${{ runner.os == 'Windows' && '.exe' || '' }}
+          path: |
+            target/release/wbquery${{ runner.os == 'Windows' && '.exe' || '' }}
+            target/release/wbquery-cli${{ runner.os == 'Windows' && '.exe' || '' }}
+            licenses/
 
   # --- Python app (wbquery/): the shipped product until the Rust port is complete --------
 

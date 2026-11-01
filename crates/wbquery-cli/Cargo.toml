@@ -6,6 +6,10 @@ edition.workspace = true
 rust-version.workspace = true
 publish = false
 
+[lib]
+name = "wbquery_cli"
+path = "src/lib.rs"
+
 [[bin]]
 name = "wbquery-cli"
 path = "src/main.rs"
