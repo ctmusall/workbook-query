@@ -28,12 +28,12 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 epaint_default_fonts = "0.37"
 regex = "1"
 # resvg and svg2pdf must share one usvg version (svg2pdf 0.13 uses usvg 0.45).
-resvg = { version = "0.45", default-features = false, features = ["text"] }
+resvg = { version = "0.49", default-features = false, features = ["text"] }
 rfd = "0.17"
 rust_xlsxwriter = { version = "0.102", features = ["chrono"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
-sha2 = "0.10"
+sha2 = "0.11"
 svg2pdf = { version = "0.13", default-features = false, features = ["text"] }
 tempfile = "3"
 thiserror = "2"
