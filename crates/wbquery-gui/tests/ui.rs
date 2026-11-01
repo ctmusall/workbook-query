@@ -62,6 +62,121 @@ fn condition_buttons_edit_the_tree() {
     assert_eq!(h.state().state.conditions.items.len(), 3);
 }
 
+fn first_condition(h: &Harness<'_, WbqApp>) -> Condition {
+    h.state().state.conditions.conditions(false)[0].clone()
+}
+
+/// The widgets on a condition row and a group row respond (the row's click-to-select area used to sit on
+/// top of them and swallow every click).
+#[test]
+fn condition_row_widgets_respond() {
+    let mut h = harness(app());
+    h.run();
+    // Operator dropdown: open it and pick "=".
+    h.get_by_label("Operator: <>").click();
+    h.run();
+    h.get_all_by_label("=").last().unwrap().click();
+    h.run();
+    assert_eq!(first_condition(&h).op, "=");
+    // Value box: type into it.
+    let value = h
+        .get_all_by_role(egui::accesskit::Role::TextInput)
+        .find(|n| n.value().as_deref() == Some("0"))
+        .unwrap();
+    value.focus();
+    h.run();
+    h.get_all_by_role(egui::accesskit::Role::TextInput)
+        .find(|n| n.value().as_deref() == Some("0"))
+        .unwrap()
+        .type_text("5");
+    h.run();
+    assert!(first_condition(&h).value.contains('5'), "{:?}", first_condition(&h).value);
+    // On checkbox.
+    h.get_by_label("On").click();
+    h.run();
+    assert!(!first_condition(&h).enabled);
+    // Column dropdown: open it and pick another column.
+    h.get_by_label("Column: Hand 1").click();
+    h.run();
+    h.get_by_label("Person 2").click();
+    h.run();
+    assert_eq!(first_condition(&h).column, "Person 2");
+    // The group's Match dropdown and NOT box.
+    h.get_by_label("Match: OR").click();
+    h.run();
+    h.get_by_label("AND").click();
+    h.run();
+    assert_eq!(h.state().state.conditions.logic, "AND");
+    h.get_by_label("NOT").click();
+    h.run();
+    assert!(h.state().state.conditions.negate);
+    // Clicking a row's background still selects it.
+    h.state_mut().state.selected = None;
+    let row = h.get_by_label("Sheet: Any sheet").rect();
+    h.hover_at(egui::pos2(row.left() - 6.0, row.center().y));
+    h.event(egui::Event::PointerButton {
+        pos: egui::pos2(row.left() - 6.0, row.center().y),
+        button: egui::PointerButton::Primary,
+        pressed: true,
+        modifiers: egui::Modifiers::NONE,
+    });
+    h.event(egui::Event::PointerButton {
+        pos: egui::pos2(row.left() - 6.0, row.center().y),
+        button: egui::PointerButton::Primary,
+        pressed: false,
+        modifiers: egui::Modifiers::NONE,
+    });
+    h.run();
+    assert_eq!(h.state().state.selected, Some(vec![0]));
+}
+
+#[test]
+fn right_click_a_result_cell_adds_a_condition() {
+    let mut h = harness(app());
+    h.run();
+    h.get_by_label("Run query").click();
+    h.run();
+    h.get_by_label("KSG").click_secondary();
+    h.run();
+    h.get_by_label("Add condition: em/Sheet › Person 1 = 'KSG'").click();
+    h.run();
+    let s = &h.state().state;
+    assert_eq!(s.conditions.conditions(false).last().unwrap().describe(), "em/Sheet › Person 1 = 'KSG'");
+    assert!(s.status.text.starts_with("Added condition"));
+}
+
+#[test]
+fn outputs_and_chart_controls_respond() {
+    let mut h = harness(app());
+    h.run();
+    // Open a sheet's output list and untick a column.
+    h.get_by_label_contains("em/Sheet  (7 of 7)").click();
+    h.run();
+    h.get_by_label("Person 2").click();
+    h.run();
+    assert!(!h.state().state.outputs_chosen()[0].1.contains(&"Person 2".to_string()));
+    h.get_by_label("None").click();
+    h.run();
+    assert!(h.state().state.outputs_chosen()[0].1.is_empty());
+    h.get_by_label("All").click();
+    h.run();
+    // Charts: switch type and Y from the controls.
+    h.get_by_label("Run query").click();
+    h.run();
+    h.get_by_label("Visualize").click();
+    h.run();
+    h.get_by_label("Chart: Line / run chart").click();
+    h.run();
+    h.get_by_label("Bar").click();
+    h.run();
+    assert_eq!(h.state().state.chart.kind, "bar");
+    h.get_by_label_contains("Table: ").click();
+    h.run();
+    h.get_by_label("em/Sheet").click();
+    h.run();
+    assert_eq!(h.state().state.chart.table, "em/Sheet");
+}
+
 #[test]
 fn errors_show_in_a_dialog() {
     let mut a = WbqApp::new(AppState::default());

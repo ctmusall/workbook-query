@@ -424,14 +424,14 @@ impl WbqApp {
                         if ui.small_button("None").clicked() {
                             all.push((o.alias.clone(), false));
                         }
-                        ui.label(RichText::new("drag ☰ to reorder").weak());
+                        ui.label(RichText::new("drag ≡ to reorder").weak());
                     });
                     for (k, (col, on)) in o.columns.iter_mut().enumerate() {
                         let drop = ui.dnd_drop_zone::<(String, usize), ()>(egui::Frame::new(), |ui| {
                             ui.horizontal(|ui| {
                                 let handle = Id::unique(("drag", &o.alias, k));
                                 ui.dnd_drag_source(handle, (o.alias.clone(), k), |ui| {
-                                    ui.label("☰");
+                                    ui.label("≡");
                                 });
                                 ui.checkbox(on, col.as_str());
                             });

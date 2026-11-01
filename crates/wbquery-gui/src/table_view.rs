@@ -53,29 +53,31 @@ pub fn result_table(ui: &mut Ui, state: &mut AppState, t: usize) -> Option<Condi
             body.rows(row_h, order.len(), |mut row| {
                 let i = order[row.index()];
                 for (j, c) in frame.columns.iter().enumerate() {
-                    let (_, resp) = row.col(|ui| {
+                    row.col(|ui| {
                         let color = &table.colors[j][i];
                         let text = c.cells[i].display();
+                        let cell = ui.max_rect().expand2(egui::vec2(4.0, 2.0));
                         if let Some(bg) = color32(color) {
-                            ui.painter().rect_filled(ui.max_rect().expand2(egui::vec2(4.0, 2.0)), 0.0, bg);
+                            ui.painter().rect_filled(cell, 0.0, bg);
                             let fg = color32(text_color(color)).unwrap_or(Color32::BLACK);
-                            ui.label(RichText::new(text).color(fg));
+                            ui.add(egui::Label::new(RichText::new(text).color(fg)).selectable(false));
                         } else {
-                            ui.label(text);
+                            ui.add(egui::Label::new(text).selectable(false));
                         }
-                    });
-                    let resp = resp.interact(egui::Sense::click());
-                    resp.context_menu(|ui| {
-                        let conds = state.cell_conditions(&c.name, &c.cells[i]);
-                        if conds.is_empty() {
-                            ui.label("No condition can test this column");
-                        }
-                        for cond in conds {
-                            if ui.button(format!("Add condition: {}", cond.describe())).clicked() {
-                                add = Some(cond);
-                                ui.close();
+                        // The whole cell (blank ones too) opens the menu.
+                        let r = ui.interact(cell, egui::Id::unique(("cell", t, i, j)), egui::Sense::click());
+                        r.context_menu(|ui| {
+                            let conds = state.cell_conditions(&c.name, &c.cells[i]);
+                            if conds.is_empty() {
+                                ui.label("No condition can test this column");
                             }
-                        }
+                            for cond in conds {
+                                if ui.button(format!("Add condition: {}", cond.describe())).clicked() {
+                                    add = Some(cond);
+                                    ui.close();
+                                }
+                            }
+                        });
                     });
                 }
             });

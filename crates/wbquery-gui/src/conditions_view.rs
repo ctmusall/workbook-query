@@ -60,52 +60,60 @@ fn draw_group(
         })
         .inner_margin(egui::Margin::symmetric(2, 1))
         .corner_radius(3.0);
-    let row = frame.show(ui, |ui| {
-        ui.horizontal(|ui| {
-            ui.add_space(INDENT * path.len() as f32);
-            if !root {
-                let arrow = if g.collapsed { "▸" } else { "▾" };
-                if ui.add(egui::Button::new(arrow).frame(false)).on_hover_text("Collapse / expand").clicked()
-                {
-                    g.collapsed = !g.collapsed;
-                }
-            }
-            ui.add_enabled_ui(on, |ui| {
-                ui.label("Match");
-                combo(ui, Id::unique(("logic", path)), "Match", &mut g.logic, LOGIC, 54.0);
-                ui.checkbox(&mut g.negate, "NOT");
-                if root {
-                    return;
-                }
-                ui.add(egui::TextEdit::singleline(&mut g.name).hint_text("group name").desired_width(110.0))
-                    .on_hover_text("A label for this group (optional)");
-                if g.collapsed {
-                    bulk_editor(ui, state, g, path);
-                }
-                let colors: std::collections::BTreeSet<String> =
-                    g.conditions(false).iter().map(|c| c.color.clone()).collect();
-                let shared = if colors.len() == 1 {
-                    colors.iter().next().cloned().unwrap_or_default()
-                } else {
-                    String::new()
-                };
-                if let Some(c) =
-                    color_button(ui, Id::unique(("group-color", path)), &shared, colors.len() > 1)
-                {
-                    for cond in all_conditions(g) {
-                        cond.color = c.clone();
+    // The row's click-to-select area is registered below its widgets, so they still get their clicks.
+    let row = ui.scope_builder(egui::UiBuilder::new().sense(egui::Sense::click()), |ui| {
+        frame.show(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.add_space(INDENT * path.len() as f32);
+                if !root {
+                    let arrow = if g.collapsed { "▸" } else { "▾" };
+                    if ui
+                        .add(egui::Button::new(arrow).frame(false))
+                        .on_hover_text("Collapse / expand")
+                        .clicked()
+                    {
+                        g.collapsed = !g.collapsed;
                     }
                 }
-            });
-            if !root {
-                ui.add_enabled_ui(parent_on, |ui| {
-                    ui.checkbox(&mut g.enabled, "On")
-                        .on_hover_text("Untick to switch the whole group off without deleting it");
+                ui.add_enabled_ui(on, |ui| {
+                    ui.label("Match");
+                    combo(ui, Id::unique(("logic", path)), "Match", &mut g.logic, LOGIC, 54.0);
+                    ui.checkbox(&mut g.negate, "NOT");
+                    if root {
+                        return;
+                    }
+                    ui.add(
+                        egui::TextEdit::singleline(&mut g.name).hint_text("group name").desired_width(110.0),
+                    )
+                    .on_hover_text("A label for this group (optional)");
+                    if g.collapsed {
+                        bulk_editor(ui, state, g, path);
+                    }
+                    let colors: std::collections::BTreeSet<String> =
+                        g.conditions(false).iter().map(|c| c.color.clone()).collect();
+                    let shared = if colors.len() == 1 {
+                        colors.iter().next().cloned().unwrap_or_default()
+                    } else {
+                        String::new()
+                    };
+                    if let Some(c) =
+                        color_button(ui, Id::unique(("group-color", path)), &shared, colors.len() > 1)
+                    {
+                        for cond in all_conditions(g) {
+                            cond.color = c.clone();
+                        }
+                    }
                 });
-            }
-        });
+                if !root {
+                    ui.add_enabled_ui(parent_on, |ui| {
+                        ui.checkbox(&mut g.enabled, "On")
+                            .on_hover_text("Untick to switch the whole group off without deleting it");
+                    });
+                }
+            });
+        })
     });
-    if row.response.interact(egui::Sense::click()).clicked() {
+    if row.response.clicked() {
         events.select = Some(path.to_vec());
     }
     if g.collapsed && !root {
@@ -184,82 +192,85 @@ fn draw_condition(
         })
         .inner_margin(egui::Margin::symmetric(2, 1))
         .corner_radius(3.0);
-    let row = frame.show(ui, |ui| {
-        ui.horizontal(|ui| {
-            ui.add_space(INDENT * path.len() as f32 + 14.0);
-            ui.add_enabled_ui(on, |ui| {
-                let mut source_label =
-                    if c.source == ANY_SOURCE { ANY_LABEL.to_string() } else { c.source.clone() };
-                let mut labels: Vec<String> = vec![ANY_LABEL.into()];
-                labels.extend(state.aliases());
-                if !labels.contains(&source_label) {
-                    labels.push(source_label.clone());
-                }
-                if search_combo(
-                    ui,
-                    Id::unique(("source", path)),
-                    "Sheet",
-                    &mut source_label,
-                    &labels,
-                    120.0,
-                    &|_| None,
-                ) {
-                    c.source =
-                        if source_label == ANY_LABEL { ANY_SOURCE.into() } else { source_label.clone() };
-                }
-                let mut columns = sort_columns(&state.columns_for(&c.source));
-                if !columns.contains(&c.column) {
-                    columns.push(c.column.clone());
-                }
-                let any = c.source == ANY_SOURCE;
-                let tip = |col: &str| any.then(|| format!("In: {}", state.sheets_with(col).join(", ")));
-                search_combo(
-                    ui,
-                    Id::unique(("column", path)),
-                    "Column",
-                    &mut c.column,
-                    &columns,
-                    140.0,
-                    &tip,
-                );
-                if combo(ui, Id::unique(("op", path)), "Operator", &mut c.op, OPERATORS, 96.0)
-                    && NO_VALUE_OPERATORS.contains(&c.op.as_str())
-                {
-                    c.value.clear();
-                }
-                let suggestions = state.values_for(&c.source.clone(), &c.column.clone());
-                let value_id = Id::unique(("value", path));
-                let ev = ui
-                    .add_enabled_ui(c.enabled && !NO_VALUE_OPERATORS.contains(&c.op.as_str()), |ui| {
-                        suggest_field(
-                            ui,
-                            value_id,
-                            &mut c.value,
-                            &suggestions,
-                            "value (lists: a, b, c)",
-                            150.0,
-                        )
-                    })
-                    .inner;
-                if let Some(r) = &ev.response {
-                    if focus.as_deref() == Some(path) {
-                        r.request_focus();
+    // The row's click-to-select area is registered below its widgets, so they still get their clicks.
+    let row = ui.scope_builder(egui::UiBuilder::new().sense(egui::Sense::click()), |ui| {
+        frame.show(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.add_space(INDENT * path.len() as f32 + 14.0);
+                ui.add_enabled_ui(on, |ui| {
+                    let mut source_label =
+                        if c.source == ANY_SOURCE { ANY_LABEL.to_string() } else { c.source.clone() };
+                    let mut labels: Vec<String> = vec![ANY_LABEL.into()];
+                    labels.extend(state.aliases());
+                    if !labels.contains(&source_label) {
+                        labels.push(source_label.clone());
                     }
-                    if r.gained_focus() {
-                        events.select = Some(path.to_vec());
+                    if search_combo(
+                        ui,
+                        Id::unique(("source", path)),
+                        "Sheet",
+                        &mut source_label,
+                        &labels,
+                        120.0,
+                        &|_| None,
+                    ) {
+                        c.source =
+                            if source_label == ANY_LABEL { ANY_SOURCE.into() } else { source_label.clone() };
                     }
-                }
-                if ev.submitted {
-                    events.run = true;
-                }
-                if let Some(col) = color_button(ui, Id::unique(("color", path)), &c.color, false) {
-                    c.color = col;
-                }
-                ui.checkbox(&mut c.enabled, "On");
+                    let mut columns = sort_columns(&state.columns_for(&c.source));
+                    if !columns.contains(&c.column) {
+                        columns.push(c.column.clone());
+                    }
+                    let any = c.source == ANY_SOURCE;
+                    let tip = |col: &str| any.then(|| format!("In: {}", state.sheets_with(col).join(", ")));
+                    search_combo(
+                        ui,
+                        Id::unique(("column", path)),
+                        "Column",
+                        &mut c.column,
+                        &columns,
+                        140.0,
+                        &tip,
+                    );
+                    if combo(ui, Id::unique(("op", path)), "Operator", &mut c.op, OPERATORS, 96.0)
+                        && NO_VALUE_OPERATORS.contains(&c.op.as_str())
+                    {
+                        c.value.clear();
+                    }
+                    let suggestions = state.values_for(&c.source.clone(), &c.column.clone());
+                    let value_id = Id::unique(("value", path));
+                    let ev = ui
+                        .add_enabled_ui(c.enabled && !NO_VALUE_OPERATORS.contains(&c.op.as_str()), |ui| {
+                            suggest_field(
+                                ui,
+                                value_id,
+                                &mut c.value,
+                                &suggestions,
+                                "value (lists: a, b, c)",
+                                150.0,
+                            )
+                        })
+                        .inner;
+                    if let Some(r) = &ev.response {
+                        if focus.as_deref() == Some(path) {
+                            r.request_focus();
+                        }
+                        if r.gained_focus() {
+                            events.select = Some(path.to_vec());
+                        }
+                    }
+                    if ev.submitted {
+                        events.run = true;
+                    }
+                    if let Some(col) = color_button(ui, Id::unique(("color", path)), &c.color, false) {
+                        c.color = col;
+                    }
+                    ui.checkbox(&mut c.enabled, "On");
+                });
             });
-        });
+        })
     });
-    if row.response.interact(egui::Sense::click()).clicked() {
+    if row.response.clicked() {
         events.select = Some(path.to_vec());
     }
 }
