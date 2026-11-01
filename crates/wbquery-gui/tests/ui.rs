@@ -178,6 +178,22 @@ fn outputs_and_chart_controls_respond() {
 }
 
 #[test]
+fn color_picker_opens_and_sets_a_color() {
+    let mut h = harness(app());
+    h.run();
+    h.get_by_label("Highlight color").click();
+    h.run();
+    h.get_by_label("No color").click();
+    h.run();
+    assert_eq!(first_condition(&h).color, "");
+    h.get_by_label("Highlight color").click();
+    h.run();
+    h.get_by_label("Highlight #ff8a80").click();
+    h.run();
+    assert_eq!(first_condition(&h).color, "#ff8a80");
+}
+
+#[test]
 fn errors_show_in_a_dialog() {
     let mut a = WbqApp::new(AppState::default());
     a.state.error("Something odd <> '0'");
@@ -198,6 +214,11 @@ fn screenshots() {
         .with_context_setup(wbquery_gui::setup_fonts)
         .wgpu()
         .build_ui_state(|ui, app: &mut WbqApp| app.draw(ui), app());
+    h.run();
+    h.get_by_label("Highlight color").click();
+    h.run();
+    h.render().unwrap().save(dir.join("picker.png")).unwrap();
+    h.key_press(egui::Key::Escape);
     h.run();
     h.get_by_label("Run query").click();
     h.run();

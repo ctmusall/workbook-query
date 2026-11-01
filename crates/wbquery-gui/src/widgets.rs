@@ -168,31 +168,59 @@ pub fn color_button(ui: &mut Ui, id: Id, color: &str, mixed: bool) -> Option<Str
     );
     let enabled = ui.is_enabled();
     r.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, enabled, "Highlight color"));
-    let _ = id;
-    let popup = egui::Popup::from_toggle_button_response(&r)
-        .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside);
-    popup.show(|ui| {
-        let mut c = fill.unwrap_or(Color32::from_rgb(0xff, 0xd5, 0x4f));
-        if egui::widgets::color_picker::color_picker_color32(
-            ui,
-            &mut c,
-            egui::widgets::color_picker::Alpha::Opaque,
-        ) {
-            out = Some(hex(c));
+    // The picker's open state is kept here: egui's toggle popup closed on the very click that opened it.
+    let open_id = id.with("open");
+    let mut open = ui.data(|d| d.get_temp::<bool>(open_id).unwrap_or(false));
+    if r.clicked() {
+        open = !open;
+    }
+    if open {
+        let area = egui::Area::new(id.with("picker"))
+            .order(egui::Order::Foreground)
+            .fixed_pos(r.rect.left_bottom() + egui::vec2(0.0, 2.0))
+            .show(ui.ctx(), |ui| {
+                egui::Frame::popup(ui.style()).show(ui, |ui| {
+                    let mut c = fill.unwrap_or(Color32::from_rgb(0xff, 0xd5, 0x4f));
+                    if egui::widgets::color_picker::color_picker_color32(
+                        ui,
+                        &mut c,
+                        egui::widgets::color_picker::Alpha::Opaque,
+                    ) {
+                        out = Some(hex(c));
+                    }
+                    ui.horizontal(|ui| {
+                        for preset in
+                            ["#ffd54f", "#ff8a80", "#80d8ff", "#b9f6ca", "#ea80fc", "#ff0000", "#0000ff"]
+                        {
+                            let pc = color32(preset).expect("preset");
+                            let b = ui.add(egui::Button::new("  ").fill(pc)).on_hover_text(preset);
+                            let label = format!("Highlight {preset}");
+                            b.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, &label));
+                            if b.clicked() {
+                                out = Some(preset.to_string());
+                                open = false;
+                            }
+                        }
+                    });
+                    ui.horizontal(|ui| {
+                        if ui.button("No color").clicked() {
+                            out = Some(String::new());
+                            open = false;
+                        }
+                        if ui.button("Done").clicked() {
+                            open = false;
+                        }
+                    });
+                });
+            });
+        let clicked_elsewhere = ui.input(|i| i.pointer.any_pressed())
+            && !area.response.contains_pointer()
+            && !r.contains_pointer();
+        if clicked_elsewhere || ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+            open = false;
         }
-        ui.horizontal(|ui| {
-            for preset in ["#ffd54f", "#ff8a80", "#80d8ff", "#b9f6ca", "#ea80fc", "#ff0000", "#0000ff"] {
-                let pc = color32(preset).expect("preset");
-                if ui.add(egui::Button::new("  ").fill(pc)).clicked() {
-                    out = Some(preset.to_string());
-                }
-            }
-        });
-        if ui.button("No color").clicked() {
-            out = Some(String::new());
-            ui.close();
-        }
-    });
+    }
+    ui.data_mut(|d| d.insert_temp(open_id, open));
     r.context_menu(|ui| {
         if ui.button("No color").clicked() {
             out = Some(String::new());
