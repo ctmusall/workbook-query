@@ -1,0 +1,804 @@
+{
+ "cell_number": [
+  {
+   "in": "1 Micrococcus luteus",
+   "out": 1.0
+  },
+  {
+   "in": "3 CFU",
+   "out": 3.0
+  },
+  {
+   "in": "1,200 colonies",
+   "out": 1200.0
+  },
+  {
+   "in": "5% coverage",
+   "out": 0.05
+  },
+  {
+   "in": " 4 mold - see note",
+   "out": 4.0
+  },
+  {
+   "in": "1.5",
+   "out": 1.5
+  },
+  {
+   "in": "2",
+   "out": 2.0
+  },
+  {
+   "in": "TNTC",
+   "out": null
+  },
+  {
+   "in": "<1",
+   "out": null
+  },
+  {
+   "in": ">300",
+   "out": null
+  },
+  {
+   "in": "approx 2",
+   "out": null
+  },
+  {
+   "in": "2026-01-05",
+   "out": null
+  },
+  {
+   "in": "5/2",
+   "out": null
+  },
+  {
+   "in": "",
+   "out": null
+  },
+  {
+   "in": "n/a",
+   "out": null
+  },
+  {
+   "in": "1e5",
+   "out": 100000.0
+  },
+  {
+   "in": "-3",
+   "out": -3.0
+  },
+  {
+   "in": "+4.5 x",
+   "out": 4.5
+  },
+  {
+   "in": "1,2,3 x",
+   "out": 123.0
+  },
+  {
+   "in": ".5 x",
+   "out": null
+  },
+  {
+   "in": "12",
+   "out": 12.0
+  },
+  {
+   "in": "  7  ",
+   "out": 7.0
+  },
+  {
+   "in": "50%",
+   "out": 0.5
+  },
+  {
+   "in": "5 %",
+   "out": 0.05
+  },
+  {
+   "in": "inf",
+   "out": {
+    "f": "inf"
+   }
+  },
+  {
+   "in": "nan",
+   "out": null
+  },
+  {
+   "in": "1_000",
+   "out": 1000.0
+  },
+  {
+   "in": "Infinity",
+   "out": {
+    "f": "inf"
+   }
+  },
+  {
+   "in": "1.",
+   "out": 1.0
+  },
+  {
+   "in": "-.5",
+   "out": -0.5
+  },
+  {
+   "in": "1e400",
+   "out": {
+    "f": "inf"
+   }
+  },
+  {
+   "in": 3,
+   "out": 3.0
+  },
+  {
+   "in": 2.5,
+   "out": 2.5
+  },
+  {
+   "in": true,
+   "out": 1.0
+  }
+ ],
+ "leading_number": [
+  {
+   "in": "1 Micrococcus luteus",
+   "out": [
+    1.0,
+    "Micrococcus luteus"
+   ]
+  },
+  {
+   "in": "3 CFU",
+   "out": [
+    3.0,
+    "CFU"
+   ]
+  },
+  {
+   "in": "1,200 colonies",
+   "out": [
+    1200.0,
+    "colonies"
+   ]
+  },
+  {
+   "in": "5% coverage",
+   "out": [
+    0.05,
+    "coverage"
+   ]
+  },
+  {
+   "in": " 4 mold - see note",
+   "out": [
+    4.0,
+    "mold - see note"
+   ]
+  },
+  {
+   "in": "1.5",
+   "out": null
+  },
+  {
+   "in": "2",
+   "out": null
+  },
+  {
+   "in": "TNTC",
+   "out": null
+  },
+  {
+   "in": "<1",
+   "out": null
+  },
+  {
+   "in": ">300",
+   "out": null
+  },
+  {
+   "in": "approx 2",
+   "out": null
+  },
+  {
+   "in": "2026-01-05",
+   "out": null
+  },
+  {
+   "in": "5/2",
+   "out": null
+  },
+  {
+   "in": "",
+   "out": null
+  },
+  {
+   "in": "n/a",
+   "out": null
+  },
+  {
+   "in": "1e5",
+   "out": null
+  },
+  {
+   "in": "-3",
+   "out": null
+  },
+  {
+   "in": "+4.5 x",
+   "out": [
+    4.5,
+    "x"
+   ]
+  },
+  {
+   "in": "1,2,3 x",
+   "out": [
+    123.0,
+    "x"
+   ]
+  },
+  {
+   "in": ".5 x",
+   "out": null
+  },
+  {
+   "in": "12",
+   "out": null
+  },
+  {
+   "in": "  7  ",
+   "out": null
+  },
+  {
+   "in": "50%",
+   "out": null
+  },
+  {
+   "in": "5 %",
+   "out": [
+    5.0,
+    "%"
+   ]
+  },
+  {
+   "in": "inf",
+   "out": null
+  },
+  {
+   "in": "nan",
+   "out": null
+  },
+  {
+   "in": "1_000",
+   "out": null
+  },
+  {
+   "in": "Infinity",
+   "out": null
+  },
+  {
+   "in": "1.",
+   "out": null
+  },
+  {
+   "in": "-.5",
+   "out": null
+  },
+  {
+   "in": "1e400",
+   "out": null
+  }
+ ],
+ "parse_number": [
+  {
+   "in": "1 Micrococcus luteus",
+   "error": "Not a number: '1 Micrococcus luteus'"
+  },
+  {
+   "in": "3 CFU",
+   "error": "Not a number: '3 CFU'"
+  },
+  {
+   "in": "1,200 colonies",
+   "error": "Not a number: '1,200 colonies'"
+  },
+  {
+   "in": "5% coverage",
+   "error": "Not a number: '5% coverage'"
+  },
+  {
+   "in": " 4 mold - see note",
+   "error": "Not a number: ' 4 mold - see note'"
+  },
+  {
+   "in": "1.5",
+   "ok": 1.5
+  },
+  {
+   "in": "2",
+   "ok": 2.0
+  },
+  {
+   "in": "TNTC",
+   "error": "Not a number: 'TNTC'"
+  },
+  {
+   "in": "<1",
+   "error": "Not a number: '<1'"
+  },
+  {
+   "in": ">300",
+   "error": "Not a number: '>300'"
+  },
+  {
+   "in": "approx 2",
+   "error": "Not a number: 'approx 2'"
+  },
+  {
+   "in": "2026-01-05",
+   "error": "Not a number: '2026-01-05'"
+  },
+  {
+   "in": "5/2",
+   "error": "Not a number: '5/2'"
+  },
+  {
+   "in": "",
+   "ok": null
+  },
+  {
+   "in": "n/a",
+   "error": "Not a number: 'n/a'"
+  },
+  {
+   "in": "1e5",
+   "ok": 100000.0
+  },
+  {
+   "in": "-3",
+   "ok": -3.0
+  },
+  {
+   "in": "+4.5 x",
+   "error": "Not a number: '+4.5 x'"
+  },
+  {
+   "in": "1,2,3 x",
+   "error": "Not a number: '1,2,3 x'"
+  },
+  {
+   "in": ".5 x",
+   "error": "Not a number: '.5 x'"
+  },
+  {
+   "in": "12",
+   "ok": 12.0
+  },
+  {
+   "in": "  7  ",
+   "ok": 7.0
+  },
+  {
+   "in": "50%",
+   "ok": 0.5
+  },
+  {
+   "in": "5 %",
+   "ok": 0.05
+  },
+  {
+   "in": "inf",
+   "ok": {
+    "f": "inf"
+   }
+  },
+  {
+   "in": "nan",
+   "ok": null
+  },
+  {
+   "in": "1_000",
+   "ok": 1000.0
+  },
+  {
+   "in": "Infinity",
+   "ok": {
+    "f": "inf"
+   }
+  },
+  {
+   "in": "1.",
+   "ok": 1.0
+  },
+  {
+   "in": "-.5",
+   "ok": -0.5
+  },
+  {
+   "in": "1e400",
+   "ok": {
+    "f": "inf"
+   }
+  }
+ ],
+ "normalize_key": [
+  {
+   "in": 101,
+   "out": "101"
+  },
+  {
+   "in": 101.0,
+   "out": "101"
+  },
+  {
+   "in": " 101 ",
+   "out": "101"
+  },
+  {
+   "in": "A1 ",
+   "out": "a1"
+  },
+  {
+   "in": "a1",
+   "out": "a1"
+  },
+  {
+   "in": {
+    "d": "2024-01-05T13:00:00"
+   },
+   "out": "2024-01-05"
+  },
+  {
+   "in": null,
+   "out": "BLANK"
+  },
+  {
+   "in": null,
+   "out": "BLANK"
+  },
+  {
+   "in": "  ",
+   "out": "BLANK"
+  },
+  {
+   "in": true,
+   "out": "true"
+  },
+  {
+   "in": false,
+   "out": "false"
+  },
+  {
+   "in": 1.5,
+   "out": "1.5"
+  },
+  {
+   "in": "1,000",
+   "out": "1000"
+  },
+  {
+   "in": "1e3",
+   "out": "1000"
+  },
+  {
+   "in": 0.1,
+   "out": "0.1"
+  },
+  {
+   "in": 1e+16,
+   "out": "10000000000000000"
+  },
+  {
+   "in": 1e+17,
+   "out": "100000000000000000"
+  },
+  {
+   "in": 1.5e-07,
+   "out": "1.5e-07"
+  },
+  {
+   "in": "Straße",
+   "out": "strasse"
+  },
+  {
+   "in": "inf",
+   "out": "inf"
+  },
+  {
+   "in": "-0",
+   "out": "0"
+  },
+  {
+   "in": "2024-01-05",
+   "out": "2024-01-05"
+  },
+  {
+   "in": 123456789012.0,
+   "out": "123456789012"
+  }
+ ],
+ "normalize_color": [
+  {
+   "in": "#FF00AA",
+   "ok": "#ff00aa"
+  },
+  {
+   "in": "ff00aa",
+   "ok": "#ff00aa"
+  },
+  {
+   "in": "",
+   "ok": ""
+  },
+  {
+   "in": "  #abcdef ",
+   "ok": "#abcdef"
+  },
+  {
+   "in": "red",
+   "error": "Highlight color must look like #ff0000, not 'red'"
+  },
+  {
+   "in": "#abc",
+   "error": "Highlight color must look like #ff0000, not '#abc'"
+  },
+  {
+   "in": "#1234567",
+   "error": "Highlight color must look like #ff0000, not '#1234567'"
+  }
+ ],
+ "text_color": [
+  {
+   "in": "#ffd54f",
+   "out": "#000000"
+  },
+  {
+   "in": "#0000ff",
+   "out": "#ffffff"
+  },
+  {
+   "in": "#ff0000",
+   "out": "#ffffff"
+  },
+  {
+   "in": "#000000",
+   "out": "#ffffff"
+  },
+  {
+   "in": "#ffffff",
+   "out": "#000000"
+  },
+  {
+   "in": "#969696",
+   "out": "#ffffff"
+  },
+  {
+   "in": "#808080",
+   "out": "#ffffff"
+  }
+ ],
+ "sort_columns": [
+  {
+   "in": [
+    "P10",
+    "status",
+    "P2",
+    "Lot ID",
+    "lot",
+    "Donor ID"
+   ],
+   "out": [
+    "Donor ID",
+    "lot",
+    "Lot ID",
+    "P2",
+    "P10",
+    "status"
+   ]
+  },
+  {
+   "in": [
+    "a10b2",
+    "a10b10",
+    "a9",
+    "A9",
+    "b"
+   ],
+   "out": [
+    "A9",
+    "a9",
+    "a10b2",
+    "a10b10",
+    "b"
+   ]
+  },
+  {
+   "in": [
+    "Chest 1 (2)",
+    "Chest 1",
+    "chest 10",
+    "Chest 2"
+   ],
+   "out": [
+    "Chest 1",
+    "Chest 1 (2)",
+    "Chest 2",
+    "chest 10"
+   ]
+  }
+ ],
+ "resolve_column": [
+  {
+   "columns": [
+    "lot",
+    "Lot"
+   ],
+   "name": "Lot",
+   "out": "Lot"
+  },
+  {
+   "columns": [
+    "Lot ID",
+    "Value"
+   ],
+   "name": " lot id",
+   "out": "Lot ID"
+  },
+  {
+   "columns": [
+    "Lot ID"
+   ],
+   "name": "Lot",
+   "out": null
+  },
+  {
+   "columns": [
+    "STRASSE"
+   ],
+   "name": "straße",
+   "out": "STRASSE"
+  },
+  {
+   "columns": [
+    "a",
+    "A"
+   ],
+   "name": "a ",
+   "out": "a"
+  }
+ ],
+ "column_key": [
+  {
+   "in": "  Lot ID ",
+   "out": "lot id"
+  },
+  {
+   "in": "STRASSE",
+   "out": "strasse"
+  },
+  {
+   "in": "Straße",
+   "out": "strasse"
+  },
+  {
+   "in": "ǅ",
+   "out": "ǆ"
+  }
+ ],
+ "split_list": [
+  {
+   "in": "a, b,,c ",
+   "out": [
+    "a",
+    "b",
+    "c"
+   ]
+  },
+  {
+   "in": " , ",
+   "out": []
+  },
+  {
+   "in": "",
+   "out": []
+  },
+  {
+   "in": "x",
+   "out": [
+    "x"
+   ]
+  }
+ ],
+ "sheet_name": [
+  {
+   "in": "book/Sheet1",
+   "out": "book_Sheet1"
+  },
+  {
+   "in": "BOOK/Sheet1",
+   "out": "BOOK_Sheet1 (2)"
+  },
+  {
+   "in": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "out": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  {
+   "in": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "out": "xxxxxxxxxxxxxxxxxxxxxxxxxxx (2)"
+  },
+  {
+   "in": "Query",
+   "out": "Query (2)"
+  },
+  {
+   "in": "a[b]:c*d?e/f\\g",
+   "out": "a_b__c_d_e_f_g"
+  },
+  {
+   "in": "'quoted'",
+   "out": "quoted"
+  },
+  {
+   "in": "''",
+   "out": "Sheet"
+  },
+  {
+   "in": "All results",
+   "out": "All results"
+  },
+  {
+   "in": "all results",
+   "out": "all results (2)"
+  }
+ ],
+ "default_alias": [
+  {
+   "path": "/x/book.xlsx",
+   "sheet": "Sheet1",
+   "out": "book/Sheet1"
+  },
+  {
+   "path": "/x/data.csv",
+   "sheet": "data",
+   "out": "data"
+  },
+  {
+   "path": "/x/book.xlsx",
+   "sheet": "book",
+   "out": "book"
+  },
+  {
+   "path": "C:/x/Report.v2.xlsx",
+   "sheet": "S",
+   "out": "Report.v2/S"
+  }
+ ],
+ "unique_alias": [
+  {
+   "base": "a",
+   "taken": [
+    "a",
+    "a (2)"
+   ],
+   "out": "a (3)"
+  },
+  {
+   "base": "b",
+   "taken": [
+    "a"
+   ],
+   "out": "b"
+  },
+  {
+   "base": "c",
+   "taken": [
+    "c"
+   ],
+   "out": "c (2)"
+  }
+ ]
+}

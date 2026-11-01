@@ -1,0 +1,37 @@
+[workspace]
+resolver = "3"
+members = ["crates/wbquery-core", "crates/wbquery-cli"]
+
+[workspace.package]
+version = "0.6.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Query rows across many Excel workbooks and sheets with AND/OR conditions and export the matches"
+
+[workspace.dependencies]
+wbquery-core = { path = "crates/wbquery-core" }
+anyhow = "1"
+assert_cmd = "2"
+caseless = "0.2"
+calamine = { version = "0.37", features = ["chrono"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+clap = { version = "4", features = ["derive"] }
+csv = "1"
+regex = "1"
+rust_xlsxwriter = { version = "0.102", features = ["chrono"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+sha2 = "0.10"
+tempfile = "3"
+thiserror = "2"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

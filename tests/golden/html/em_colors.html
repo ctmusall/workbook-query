@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Em Colors</title><style>
+:root { --bg:#fff; --fg:#1d232b; --muted:#5b6672; --line:#d6dce3; --head:#eef2f6; --stripe:#f7f9fb; --warn:#8a5a00; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#16191d; --fg:#e4e8ec; --muted:#9aa5b1; --line:#323940; --head:#222830; --stripe:#1b1f24; --warn:#e0b050; }
+}
+body { background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+       margin:0 auto; padding:24px 16px; max-width:1400px; }
+h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:17px; margin:28px 0 8px; }
+.muted { color:var(--muted); } .warn { color:var(--warn); }
+.scroll { overflow-x:auto; border:1px solid var(--line); border-radius:6px; }
+table { border-collapse:collapse; width:100%; font-variant-numeric:tabular-nums; }
+th, td { padding:5px 10px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
+th { background:var(--head); position:sticky; top:0; }
+tbody tr:nth-child(even) td { background:var(--stripe); }
+table.kv th { width:12em; white-space:normal; } table.kv td { white-space:pre-line; }
+code { font-size:12px; }
+</style></head>
+<body>
+<h1>Em Colors</h1>
+<p class="muted">Workbook Query {VERSION}</p>
+<div class="scroll"><table class="kv"><tbody><tr><th>Query</th><td>Em Colors</td></tr><tr><th>Description</th><td>Golden case em_colors</td></tr><tr><th>Mode</th><td>Each sheet filtered on its own</td></tr><tr><th>Conditions</th><td>(Any sheet › Person 1 = &#x27;KSG&#x27; AND (Any sheet › Chest 1 &lt;&gt; &#x27;0&#x27; OR Any sheet › Hand 1 &lt;&gt; &#x27;0&#x27;)) OR (Any sheet › Person 2 = &#x27;KSG&#x27; AND (Any sheet › Chest 1 (2) &lt;&gt; &#x27;0&#x27; OR Any sheet › Hand 1 (2) &lt;&gt; &#x27;0&#x27;))</td></tr><tr><th>Run at</th><td>{RUN_AT}</td></tr><tr><th>Rows out: EM</th><td>3</td></tr></tbody></table></div>
+
+<h2>EM <span class="muted">(3 rows)</span></h2><div class="scroll"><table><thead><tr><th>File</th><th>Sheet</th><th>Excel row</th><th>Monitor Date</th><th>Person 1</th><th>Chest 1</th><th>Hand 1</th><th>Person 2</th><th>Chest 1 (2)</th><th>Hand 1 (2)</th></tr></thead><tbody>
+<tr><td>em.xlsx</td><td>Sheet</td><td>2</td><td>2026-01-05</td><td>KSG</td><td>0</td><td style="background:#ff0000;color:#ffffff">2</td><td>TJH</td><td>4</td><td>0</td></tr>
+<tr><td>em.xlsx</td><td>Sheet</td><td>3</td><td>2026-01-06</td><td>ZEN</td><td>5</td><td>0</td><td>KSG</td><td>0</td><td style="background:#0000ff;color:#ffffff">3</td></tr>
+<tr><td>em.xlsx</td><td>Sheet</td><td>4</td><td>2026-01-07</td><td>KSG</td><td style="background:#ff0000;color:#ffffff">1 Micrococcus luteus</td><td>0</td><td>ZEN</td><td>0</td><td>TNTC</td></tr>
+</tbody></table></div>
+<h2>Sources</h2>
+<div class="scroll"><table><thead><tr><th>Source</th><th>File</th><th>Sheet</th><th>Rows</th><th>Matched</th><th>SHA-256</th></tr></thead><tbody><tr><td>EM</td><td>{DIR}/data/em.xlsx</td><td>Sheet</td><td>4</td><td>3</td><td><code>c5c2a91ad72452ff441c723b04552af503fa1331994fa5bd8a3708d1c3aed225</code></td></tr></tbody></table></div>
+</body></html>

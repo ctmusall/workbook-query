@@ -1,0 +1,25 @@
+[package]
+name = "wbquery-core"
+description = "Workbook Query engine: load sheets, filter rows with AND/OR conditions, join, export"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+caseless.workspace = true
+calamine.workspace = true
+chrono.workspace = true
+csv.workspace = true
+regex.workspace = true
+rust_xlsxwriter.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

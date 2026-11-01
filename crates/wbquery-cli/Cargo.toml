@@ -1,0 +1,23 @@
+[package]
+name = "wbquery-cli"
+description = "Command-line Workbook Query: run a saved query and export the matches"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[[bin]]
+name = "wbquery-cli"
+path = "src/main.rs"
+
+[dependencies]
+wbquery-core.workspace = true
+clap.workspace = true
+
+[dev-dependencies]
+assert_cmd.workspace = true
+calamine.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

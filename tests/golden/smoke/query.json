@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "mode": "join",
+  "join_how": "inner",
+  "sources": [
+    {
+      "alias": "L",
+      "path": "tests/golden/smoke/lots.xlsx",
+      "sheet": "Lots",
+      "key": "Lot"
+    },
+    {
+      "alias": "R",
+      "path": "tests/golden/smoke/results.xlsx",
+      "sheet": "Results",
+      "key": "Lot ID"
+    }
+  ],
+  "where": {
+    "logic": "AND",
+    "items": [
+      {
+        "source": "L",
+        "column": "Status",
+        "op": "=",
+        "value": "Pass"
+      },
+      {
+        "source": "R",
+        "column": "Value",
+        "op": ">",
+        "value": "2e7"
+      }
+    ]
+  },
+  "outputs": {
+    "L": [
+      "Status"
+    ],
+    "R": [
+      "Value"
+    ]
+  }
+}

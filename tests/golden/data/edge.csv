@@ -1,0 +1,5 @@
+Name;Count;Ratio;Flag;Note
+A;1;0.5;True;x
+
+B;;1.25;False;NA
+C;3;;True;

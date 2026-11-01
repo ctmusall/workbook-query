@@ -169,3 +169,36 @@ QT_QPA_PLATFORM=offscreen .venv/bin/pytest --cov=wbquery
 PyInstaller can't cross-compile, so each platform's executables are built on that platform. The build scripts run the test suite first.
 
 The app icon (`wbquery/assets/icon.png` and `icon.ico`) is drawn by `scripts/make_icon.py`; rerun it after changing the design.
+
+## Rust port (in progress)
+
+The app is being ported to Rust (`crates/`). The engine and the command line are done; the chart layer and the
+desktop app (egui) come next, and the Python version stays the released one until they are finished.
+
+| Crate | What it is |
+|---|---|
+| `wbquery-core` | loading sheets, conditions, independent / join queries, Excel and HTML export |
+| `wbquery-cli` | `wbquery-cli`, with the same options, messages and exit codes as the Python CLI |
+
+```bash
+cargo test --workspace                       # unit, parity and CLI tests
+cargo run -p wbquery-cli -- -q query.json    # run the CLI
+just ci                                      # everything CI checks: fmt, clippy, cargo-deny, tests, smoke test
+```
+
+The toolchain version is pinned in `rust-toolchain.toml`; `rustup` installs it on first use.
+
+**Parity tests.** `tests/golden/generate.py` ran the Python implementation over fixture workbooks and recorded
+its results (loading, every operator on many kinds of columns, query results with highlight colors, the HTML
+report and the Excel layout). The Rust tests check against those records, so the two give the same answers.
+
+**Known differences from the Python version:**
+
+- `.xls` files open (the Python version needed `xlrd`, which wasn't installed).
+- CSV headers that are blank or repeated are named like Excel headers (`Column 3`, `Name (2)`), not
+  `Unnamed: 2` / `Name.1`.
+- Dates in conditions and cells must be written out (`2024-01-05`, `1/5/2024`, `Jan 5, 2024`, with an optional
+  time); words such as `today` and dates without a year aren't read as dates.
+- A blank cell in a date column never matches a numeric condition (the Python version matched it with `<>` and
+  `<`).
+- `--print` lays the tables out in its own format.
