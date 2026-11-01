@@ -31,11 +31,6 @@ smoke: build
 # Everything CI checks.
 ci: lint test smoke
 
-# Regenerate the golden fixtures from the Python implementation (only while it still exists).
-golden:
-    .venv/bin/python tests/golden/generate.py
-    .venv/bin/python tests/golden/generate_charts.py
-
 # Save every fixture chart as SVG, PNG and PDF into target/charts/ to look at.
 charts:
     WBQ_CHART_DIR=target/charts cargo test -p wbquery-charts --release --test render

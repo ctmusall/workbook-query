@@ -1,5 +1,5 @@
 //! Parity tests against fixtures generated from the original Python implementation
-//! (tests/golden/generate.py). Each test collects every mismatch before failing, so one run shows them all.
+//! (by tests/golden/generate.py, in the git history). Each test collects every mismatch before failing, so one run shows them all.
 
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;

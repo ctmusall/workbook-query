@@ -1,5 +1,5 @@
 //! Parity with the Python chart code: what each chart plots (tests/golden/charts.json, recorded from
-//! matplotlib by tests/golden/generate_charts.py).
+//! matplotlib by tests/golden/generate_charts.py, in the git history).
 
 use std::path::PathBuf;
 
