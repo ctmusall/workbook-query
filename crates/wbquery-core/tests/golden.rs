@@ -144,8 +144,11 @@ fn conditions_match_python() {
             // Known divergence: pandas reads a blank (NaT) in a date column as the smallest int64 when
             // comparing it with a number, so it matched `<>` and `<`; here a blank never matches.
             let got = got.map(|mut g| {
-                if col.dtype == wbquery_core::DType::Date && parse_number(value).is_ok_and(|n| n.is_some()) {
-                    if let Some(want) = case.get("expect") {
+                if col.dtype == wbquery_core::DType::Date
+                    && parse_number(value).is_ok_and(|n| n.is_some())
+                    && let Some(want) = case.get("expect")
+                {
+                    {
                         for (i, c) in col.cells.iter().enumerate() {
                             if c.is_empty() {
                                 g[i] = want[i].as_bool().unwrap();

@@ -65,10 +65,10 @@ pub fn parse_datetime(text: &str) -> Option<NaiveDateTime> {
     if let Some(i) = split {
         let (date_part, time_part) = (&s[..i], s[i + 1..].trim());
         // "Jan 5 2024 13:00": the date itself may contain spaces, so try every split point.
-        if let Some(d) = parse_date_only(date_part) {
-            if let Some(t) = parse_time(time_part) {
-                return Some(d.and_time(t));
-            }
+        if let Some(d) = parse_date_only(date_part)
+            && let Some(t) = parse_time(time_part)
+        {
+            return Some(d.and_time(t));
         }
     }
     for (i, _) in s.match_indices(' ') {

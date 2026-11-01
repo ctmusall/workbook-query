@@ -734,10 +734,10 @@ fn run_join(query: &Query, frames: &HashMap<String, Frame>, warnings: &mut Vec<S
             if c.source != ANY_SOURCE && c.source != s.alias {
                 continue;
             }
-            if let Some(col) = resolve_column(&frames[&s.alias].names(), &c.column) {
-                if let Some(m) = merged.column(&format!("{}.{col}", s.alias)) {
-                    out.push(m);
-                }
+            if let Some(col) = resolve_column(&frames[&s.alias].names(), &c.column)
+                && let Some(m) = merged.column(&format!("{}.{col}", s.alias))
+            {
+                out.push(m);
             }
         }
         out

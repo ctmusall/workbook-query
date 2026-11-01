@@ -172,12 +172,13 @@ The app icon (`wbquery/assets/icon.png` and `icon.ico`) is drawn by `scripts/mak
 
 ## Rust port (in progress)
 
-The app is being ported to Rust (`crates/`). The engine and the command line are done; the chart layer and the
-desktop app (egui) come next, and the Python version stays the released one until they are finished.
+The app is being ported to Rust (`crates/`). The engine, the command line and the charts are done; the desktop app
+(egui) comes next, and the Python version stays the released one until it is finished.
 
 | Crate | What it is |
 |---|---|
 | `wbquery-core` | loading sheets, conditions, independent / join queries, Excel and HTML export |
+| `wbquery-charts` | the nine chart types: what to plot (series, bars, limits, notes), drawn to SVG, PNG (resvg) or PDF (svg2pdf) |
 | `wbquery-cli` | `wbquery-cli`, with the same options, messages and exit codes as the Python CLI |
 
 ```bash
@@ -190,7 +191,11 @@ The toolchain version is pinned in `rust-toolchain.toml`; `rustup` installs it o
 
 **Parity tests.** `tests/golden/generate.py` ran the Python implementation over fixture workbooks and recorded
 its results (loading, every operator on many kinds of columns, query results with highlight colors, the HTML
-report and the Excel layout). The Rust tests check against those records, so the two give the same answers.
+report and the Excel layout); `tests/golden/generate_charts.py` recorded what matplotlib plotted for 46 charts
+(series and their points, bars, box-plot whiskers, pie wedges, heatmap cells, control limits, legends, notes).
+The Rust tests check against those records, so the two give the same answers.
+
+Charts are drawn with the app's font (Ubuntu Light, embedded; licence in `licenses/`).
 
 **Known differences from the Python version:**
 
@@ -202,3 +207,5 @@ report and the Excel layout). The Rust tests check against those records, so the
 - A blank cell in a date column never matches a numeric condition (the Python version matched it with `<>` and
   `<`).
 - `--print` lays the tables out in its own format.
+- Charts plot the same data, but their axes are laid out by the Rust renderer: tick spacing differs a little, and
+  large numbers read `20M` rather than matplotlib's `2` with a `1e7` offset.
