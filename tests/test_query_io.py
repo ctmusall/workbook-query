@@ -9,7 +9,8 @@ from wbquery.query import Query, Source, default_alias, load_query, save_query, 
 def test_round_trip(tmp_path, two_sources):
     q = Query(sources=two_sources, mode="join", join_how="left",
               where=Group("OR", [Condition("L", "Status", "=", "Pass"), Group("AND", [], negate=True)]),
-              outputs={"L": ["Lot"], "R": ["Value", "Pct"]}, include_provenance=False)
+              outputs={"L": ["Lot"], "R": ["Value", "Pct"]}, include_provenance=False,
+              name="Lots vs results", description="Line one\nline two")
     path = save_query(q, tmp_path / "q.json")
     assert json.loads(path.read_text())["version"] == 1
     assert load_query(path) == q
@@ -19,6 +20,7 @@ def test_unknown_keys_ignored_and_errors(tmp_path):
     p = tmp_path / "q.json"
     p.write_text(json.dumps({"extra": 1, "sources": [{"alias": "A", "path": "a.xlsx", "sheet": "S", "x": 2}]}))
     assert load_query(p).sources == [Source("A", "a.xlsx", "S")]
+    assert (load_query(p).name, load_query(p).description) == ("", "")  # older files have neither
     p.write_text("{nope")
     with pytest.raises(ValueError, match="not valid JSON"):
         load_query(p)

@@ -11,7 +11,7 @@ import pandas as pd  # noqa: E402
 import pytest  # noqa: E402
 from matplotlib.figure import Figure  # noqa: E402
 
-from wbquery.charts import ChartSpec, draw, series_name  # noqa: E402
+from wbquery.charts import ChartError, ChartSpec, Dataset, draw, series_name  # noqa: E402
 from wbquery.conditions import Condition, Group, cell_hits, normalize_color  # noqa: E402
 from wbquery.export_html import render_html  # noqa: E402
 from wbquery.export_xlsx import write_xlsx  # noqa: E402
@@ -306,3 +306,70 @@ def test_hover_lists_points_under_the_cursor(qtbot):
     text = panel.hover_text(x, y)
     assert "1 Micrococcus luteus" in text and "Monitor Date: 2026-01-07" in text and "Chest" in text
     assert panel.hover_text(x + 200, y + 200) == ""
+
+
+# --- overlay datasets, each with its own X ---------------------------------------------------
+
+OVERLAY = pd.DataFrame({
+    "Monitor Date": pd.to_datetime(["2026-01-05", "2026-01-06", "2026-01-07"]),
+    "Sample Date": pd.to_datetime(["2026-02-01", "2026-02-02", "2026-02-03"]),
+    "Room": ["A", "B", "C"],
+    "Lab": ["C", "D", "A"],
+    "Chest 1": [1, 2, 3],
+    "Hand 1": [7, 8, 9],
+})
+
+
+def test_datasets_overlay_with_their_own_x():
+    fig = Figure()
+    spec = ChartSpec("line", x="Monitor Date", y="Chest 1", datasets=[Dataset("Sample Date", ["Hand 1"]),
+                                                                       Dataset("Room", [])])
+    draw(fig, OVERLAY, spec)
+    ax = fig.axes[0]
+    lines = {line.get_label(): line for line in ax.get_lines()}
+    assert set(lines) == {"Chest (Monitor Date)", "Hand (Sample Date)"}  # the empty dataset is skipped
+    assert list(lines["Hand (Sample Date)"].get_ydata()) == [7, 8, 9]
+    assert lines["Hand (Sample Date)"].get_xdata()[0] == OVERLAY["Sample Date"][0]
+    assert lines["Chest (Monitor Date)"].get_color() != lines["Hand (Sample Date)"].get_color()
+    assert ax.get_xlabel() == "Monitor Date / Sample Date"
+    assert "Sample Date: 2026-02-01" in ax.wbq_points[1][1][0]
+
+
+def test_dataset_text_x_shares_categories():
+    fig = Figure()
+    draw(fig, OVERLAY, ChartSpec("scatter", x="Room", y="Chest 1", datasets=[Dataset("Lab", ["Hand 1"])]))
+    ax = fig.axes[0]
+    assert [t.get_text() for t in ax.get_xticklabels()] == ["A", "B", "C", "D"]
+    assert list(ax.collections[1].get_offsets()[:, 0]) == [2, 3, 0]  # C, D, A
+
+
+def test_dataset_x_kinds_must_agree():
+    with pytest.raises(ChartError, match="all be dates"):
+        draw(Figure(), OVERLAY, ChartSpec("line", x="Monitor Date", y="Chest 1",
+                                          datasets=[Dataset("Room", ["Hand 1"])]))
+    with pytest.raises(ChartError, match="dataset 2"):
+        draw(Figure(), OVERLAY, ChartSpec("scatter", x="Room", y="Chest 1", datasets=[Dataset("", ["Hand 1"])]))
+
+
+def test_panel_datasets(qtbot):
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    pytest.importorskip("PySide6")
+    from wbquery.gui_charts import ChartPanel, DatasetsDialog
+
+    panel = ChartPanel()
+    qtbot.addWidget(panel)
+    panel.set_kind("line")
+    panel.set_datasets([Dataset("Sample Date", ["Hand 1"]), Dataset("Room", [])])
+    assert panel.datasets_btn.text() == "More datasets… (+1)"
+    spec = panel.spec()
+    spec.x, spec.y = "Monitor Date", "Chest 1"
+    draw(panel.figure, OVERLAY, spec)
+    assert len(panel.figure.axes[0].get_lines()) == 2
+    panel.set_kind("bar")
+    assert panel.spec().datasets == [] and not panel.datasets_btn.isVisibleTo(panel)
+
+    dlg = DatasetsDialog([Dataset("Sample Date", ["Hand 1"])], ["Monitor Date", "Sample Date"], ["Hand 1"])
+    qtbot.addWidget(dlg)
+    dlg.add_row(Dataset("Monitor Date", ["Chest 1"]))
+    dlg._remove(dlg.rows[0])
+    assert dlg.datasets() == [Dataset("Monitor Date", ["Chest 1"])]

@@ -67,6 +67,8 @@ class Query:
     mode: str = "independent"
     join_how: str = "inner"
     include_provenance: bool = True
+    name: str = ""  # what the query is called, e.g. "EOJ personnel hits, full year"
+    description: str = ""  # what it does and why, in your own words
 
     def source(self, alias: str) -> Source:
         for s in self.sources:
@@ -77,6 +79,8 @@ class Query:
     def to_dict(self) -> dict:
         return {
             "version": FORMAT_VERSION,
+            "name": self.name,
+            "description": self.description,
             "mode": self.mode,
             "join_how": self.join_how,
             "include_provenance": self.include_provenance,
@@ -104,6 +108,8 @@ class Query:
             mode=doc.get("mode", "independent"),
             join_how=doc.get("join_how", "inner"),
             include_provenance=bool(doc.get("include_provenance", True)),
+            name=str(doc.get("name") or ""),
+            description=str(doc.get("description") or ""),
         )
 
 

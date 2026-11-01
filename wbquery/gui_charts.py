@@ -13,11 +13,13 @@ import numpy as np  # noqa: E402
 from PySide6.QtCore import Qt, QTimer  # noqa: E402
 from PySide6.QtGui import QCursor  # noqa: E402
 from PySide6.QtWidgets import (  # noqa: E402
-    QCheckBox, QComboBox, QDialog, QFileDialog, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton,
-    QSpinBox, QToolTip, QVBoxLayout, QWidget,
+    QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
+    QMessageBox, QPushButton, QSpinBox, QToolTip, QVBoxLayout, QWidget,
 )
 
-from .charts import AGGREGATES, KINDS, MULTI_Y, ChartError, ChartSpec, draw, is_date, numeric_columns  # noqa: E402
+from .charts import (  # noqa: E402
+    AGGREGATES, KINDS, MULTI_Y, ChartError, ChartSpec, Dataset, draw, is_date, numeric_columns,
+)
 from .conditions import sort_columns  # noqa: E402
 from .query import QueryResult, is_provenance  # noqa: E402,F401 - is_provenance re-exported
 
@@ -25,6 +27,90 @@ NONE = "(none)"
 
 
 IMAGE_FILTER = "PNG image (*.png);;SVG image (*.svg);;PDF document (*.pdf)"
+DATASETS_TIP = "Overlay more datasets, each with its own X column and Y columns (e.g. Sample Date -> Hand)"
+
+
+def pick_columns(parent, title: str, prompt: str, columns: list[str], current) -> list[str] | None:
+    """Tick columns in a :class:`ColumnPicker`; None when cancelled."""
+    from .gui import ColumnPicker  # the app window module imports this one
+
+    rows = [(c, [], Qt.Checked if c in current else Qt.Unchecked) for c in columns]
+    dlg = ColumnPicker(title, prompt, rows, parent, show_sheets=False)
+    return dlg.checked() if dlg.exec() == QDialog.Accepted else None
+
+
+class DatasetsDialog(QDialog):
+    """Edit the extra datasets of a line / scatter chart: one row per dataset with its X column,
+    its Y columns and a Remove button."""
+
+    def __init__(self, datasets: list[Dataset], x_columns: list[str], y_columns: list[str], parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("More datasets")
+        self.resize(520, 300)
+        self.x_columns, self.y_columns = x_columns, y_columns
+        self.rows: list[tuple[QWidget, QComboBox, QPushButton, list[str]]] = []
+        lay = QVBoxLayout(self)
+        intro = QLabel("Each dataset is drawn over the chart's own X and Y with its own X column, "
+                       "e.g. Sample Date with the Hand columns.")
+        intro.setWordWrap(True)
+        lay.addWidget(intro)
+        self.rows_layout = QVBoxLayout()
+        lay.addLayout(self.rows_layout)
+        add = QPushButton("Add dataset")
+        add.clicked.connect(lambda: self.add_row(Dataset()))
+        lay.addWidget(add, 0, Qt.AlignLeft)
+        lay.addStretch()
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        lay.addWidget(buttons)
+        for ds in datasets:
+            self.add_row(ds)
+        if not datasets:
+            self.add_row(Dataset())
+
+    def add_row(self, ds: Dataset):
+        row = QWidget()
+        h = QHBoxLayout(row)
+        h.setContentsMargins(0, 0, 0, 0)
+        x_box = QComboBox()
+        x_box.addItem(NONE)
+        x_box.addItems(self.x_columns)
+        x_box.setCurrentText(ds.x or NONE)
+        y_btn = QPushButton()
+        remove = QPushButton("Remove")
+        h.addWidget(QLabel("X"))
+        h.addWidget(x_box, 1)
+        h.addWidget(y_btn, 1)
+        h.addWidget(remove)
+        entry = (row, x_box, y_btn, list(ds.ys))
+        self.rows.append(entry)
+        self._show_ys(entry)
+        y_btn.clicked.connect(lambda: self._pick_ys(entry))
+        remove.clicked.connect(lambda: self._remove(entry))
+        self.rows_layout.addWidget(row)
+
+    @staticmethod
+    def _show_ys(entry):
+        _, _, btn, ys = entry
+        btn.setText("Y columns…" if not ys else f"Y: {', '.join(ys)}" if len(ys) <= 2 else
+                    f"Y: {ys[0]} +{len(ys) - 1}")
+        btn.setToolTip(", ".join(ys) or "Choose the Y columns of this dataset")
+
+    def _pick_ys(self, entry):
+        chosen = pick_columns(self, "Y columns", "Tick the columns to plot against this dataset's X.",
+                              self.y_columns, set(entry[3]))
+        if chosen is not None:
+            entry[3][:] = chosen
+            self._show_ys(entry)
+
+    def _remove(self, entry):
+        self.rows.remove(entry)
+        entry[0].deleteLater()
+
+    def datasets(self) -> list[Dataset]:
+        return [Dataset("" if x.currentText() == NONE else x.currentText(), list(ys))
+                for _, x, _, ys in self.rows if ys]
 
 
 class ChartPanel(QWidget):
@@ -53,6 +139,9 @@ class ChartPanel(QWidget):
         self.extra_y: list[str] = []  # line / scatter: Y columns after the Y box's
         self.more_y_btn = QPushButton("More Y…")
         self.more_y_btn.setToolTip("Plot several Y columns (e.g. every Chest, Sleeve and Hand column)")
+        self.datasets: list[Dataset] = []  # line / scatter: overlays, each with its own X
+        self.datasets_btn = QPushButton("More datasets…")
+        self.datasets_btn.setToolTip(DATASETS_TIP)
         self.merge_check = QCheckBox("Combine numbered columns")
         self.merge_check.setChecked(True)
         self.merge_check.setToolTip("Chest 1, Chest 2 and Chest 1 (2) become one 'Chest' series")
@@ -73,8 +162,8 @@ class ChartPanel(QWidget):
             (QLabel("Table"), self.table_box), (QLabel("Chart"), self.kind_box), (QLabel("Title"), self.title_edit),
             (self.x_label, self.x_box), (self.y_label, self.y_box), (self.group_label, self.group_box),
             (self.agg_label, self.agg_box), (self.bins_label, self.bins_spin), (None, self.stacked_check),
-            (None, self.more_y_btn), (None, self.merge_check), (None, self.hits_check),
-            (None, self.labels_check),
+            (None, self.more_y_btn), (None, self.datasets_btn), (None, self.merge_check),
+            (None, self.hits_check), (None, self.labels_check),
         ]
         for i, (lab, w) in enumerate(cells):
             r, c = divmod(i, 3)
@@ -113,6 +202,7 @@ class ChartPanel(QWidget):
         self.hits_check.toggled.connect(self.schedule)
         self.labels_check.toggled.connect(self.schedule)
         self.more_y_btn.clicked.connect(lambda: self.pick_y())
+        self.datasets_btn.clicked.connect(lambda: self.edit_datasets())
         self.title_edit.textChanged.connect(self.schedule)
         self.save_btn.clicked.connect(lambda: self.save())
         self._kind_changed()
@@ -149,6 +239,7 @@ class ChartPanel(QWidget):
             merge_numbered=self.merge_check.isChecked(),
             only_hits=self.hits_check.isChecked() and self.hits_check.isEnabled(),
             point_labels=self.labels_check.isChecked(),
+            datasets=[Dataset(d.x, list(d.ys)) for d in self.datasets] if self.kind() in MULTI_Y else [],
         )
 
     def set_spec(self, spec: ChartSpec):
@@ -161,6 +252,7 @@ class ChartPanel(QWidget):
         self.stacked_check.setChecked(spec.stacked)
         self.title_edit.setText(spec.title)
         self.set_extra_y(spec.ys)
+        self.set_datasets(spec.datasets)
         self.merge_check.setChecked(spec.merge_numbered)
         self.hits_check.setChecked(spec.only_hits)
         self.labels_check.setChecked(spec.point_labels)
@@ -216,6 +308,8 @@ class ChartPanel(QWidget):
         self._fill(self.x_box, cols + extra, True, (dates or categories or [""])[0])
         self._fill(self.group_box, categories + dates + nums + extra, True, "")
         self.set_extra_y([c for c in self.extra_y if c in cols + extra])
+        self.set_datasets([Dataset(d.x if d.x in cols + extra else "", [c for c in d.ys if c in cols + extra])
+                           for d in self.datasets])
         self._fill_required()
         self.schedule()
 
@@ -228,18 +322,32 @@ class ChartPanel(QWidget):
                                    "Plot several Y columns (e.g. every Chest, Sleeve and Hand column)")
         self.schedule()
 
+    def set_datasets(self, datasets: list[Dataset]):
+        """Use ``datasets`` as the overlays (ones without a Y column are dropped)."""
+        self.datasets = [Dataset(d.x, list(dict.fromkeys(c for c in d.ys if c))) for d in datasets if any(d.ys)]
+        n = len(self.datasets)
+        self.datasets_btn.setText(f"More datasets… (+{n})" if n else "More datasets…")
+        self.datasets_btn.setToolTip("\n".join(f"{d.x or 'row order'} → {', '.join(d.ys)}" for d in self.datasets)
+                                     if n else DATASETS_TIP)
+        self.schedule()
+
+    def edit_datasets(self) -> bool:
+        k = self._kinds
+        cols = k["date"] + k["numeric"] + k["category"]
+        dlg = DatasetsDialog(self.datasets, sort_columns(cols) + k["extra"], k["numeric"], self)
+        if dlg.exec() != QDialog.Accepted:
+            return False
+        self.set_datasets(dlg.datasets())
+        return True
+
     def pick_y(self, columns: list[str] | None = None) -> bool:
         """Choose every Y column at once (``columns`` skips the dialog): the first goes in the Y box."""
         if columns is None:
-            from .gui import ColumnPicker  # the app window module imports this one
-
-            current = set(self.spec().y_columns())
-            rows = [(c, [], Qt.Checked if c in current else Qt.Unchecked) for c in self._kinds["numeric"]]
-            dlg = ColumnPicker("Y columns", "Tick the columns to plot. With 'Combine numbered columns', "
-                               "Chest 1, Chest 2, Chest 1 (2)… make one 'Chest' line.", rows, self, show_sheets=False)
-            if dlg.exec() != QDialog.Accepted:
+            columns = pick_columns(self, "Y columns", "Tick the columns to plot. With 'Combine numbered columns', "
+                                   "Chest 1, Chest 2, Chest 1 (2)… make one 'Chest' line.", self._kinds["numeric"],
+                                   set(self.spec().y_columns()))
+            if columns is None:
                 return False
-            columns = dlg.checked()
         if not columns:
             return False
         self._loading = True
@@ -272,6 +380,7 @@ class ChartPanel(QWidget):
                            (self.agg_label, self.agg_box, info.agg), (self.bins_label, self.bins_spin, info.bins),
                            (None, self.stacked_check, info.stacked),
                            (None, self.more_y_btn, self.kind() in MULTI_Y),
+                           (None, self.datasets_btn, self.kind() in MULTI_Y),
                            (None, self.merge_check, self.kind() in MULTI_Y),
                            (None, self.hits_check, self.kind() in MULTI_Y),
                            (None, self.labels_check, self.kind() in MULTI_Y)):

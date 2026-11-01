@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 import pandas as pd
-from openpyxl.styles import Font, PatternFill
+from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 from .conditions import text_color
@@ -80,6 +80,9 @@ def write_xlsx(result: QueryResult, path: str | Path) -> Path:
         for label, value in summary_rows(result):
             ws.append([label, value])
             ws.cell(ws.max_row, 1).font = BOLD
+            ws.cell(ws.max_row, 1).alignment = Alignment(vertical="top")
+            if label == "Description":
+                ws.cell(ws.max_row, 2).alignment = Alignment(wrap_text=True, vertical="top")
         if result.warnings:
             ws.append([])
             for w in result.warnings:

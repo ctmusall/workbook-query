@@ -48,3 +48,17 @@ def test_html(tmp_path, two_sources):
     assert "2024-01-05" in text and "<h2>L" in text and "(3 rows)" in text
     path = write_html(res, tmp_path / "r")
     assert path.suffix == ".html" and path.stat().st_size > 1000
+
+
+def test_name_and_description_in_exports(tmp_path, two_sources):
+    res = _result(two_sources)
+    res.query.name, res.query.description = "Passing lots", "Why: <monthly> review"
+    text = render_html(res)
+    assert "<title>Passing lots</title>" in text and "Why: &lt;monthly&gt; review" in text
+    wb = openpyxl.load_workbook(write_xlsx(res, tmp_path / "out.xlsx"))
+    rows = [[c.value for c in r][:2] for r in wb["Query"].iter_rows()]
+    assert rows[:2] == [["Query", "Passing lots"], ["Description", "Why: <monthly> review"]]
+    res.query.name = res.query.description = ""
+    assert "<title>Workbook Query results</title>" in render_html(res)
+    plain = openpyxl.load_workbook(write_xlsx(res, tmp_path / "b.xlsx"))["Query"]
+    assert plain.cell(1, 1).value == "Mode"

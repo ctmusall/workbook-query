@@ -77,11 +77,17 @@ def test_join_query_save_and_reload(win, lots_xlsx, results_xlsx, tmp_path):
     assert win.run(), win.errors
     assert win.tabs.tabText(0) == "Joined (2)"  # A1 and 101
 
+    win.name_edit.setText("Passing lots")
+    win.description_edit.setPlainText("Lots that passed, joined to their results.\nFor the monthly review.")
+    assert win.windowTitle().startswith("Passing lots — ")
     path = win.save_query(str(tmp_path / "q.json"))
     saved = win.build_query()
+    assert saved.name == "Passing lots" and saved.description.endswith("monthly review.")
     other = MainWindow()
     assert other.load_query(str(path))
     assert other.build_query() == saved
+    assert other.description_edit.toPlainText() == saved.description
+    assert other.windowTitle().startswith("Passing lots — ") and "Passing lots" in other.status_label.text()
     other.deleteLater()
 
 

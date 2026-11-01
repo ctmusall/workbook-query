@@ -5,7 +5,8 @@ read the same way the query reads them: numbers as numbers, text such as ``1,000
 ``5e7``, ``50%`` or ``1 Micrococcus luteus`` (-> 1) parsed (see :func:`loader.cell_number`),
 anything else skipped. Line and scatter charts can take several Y columns; numbered columns
 (``Chest 1``, ``Chest 2 (3)``) can merge into one series (``Chest``), and ``only_hits`` keeps
-just the cells a condition counted for (``QueryResult.hits``).
+just the cells a condition counted for (``QueryResult.hits``). They can also overlay more datasets,
+each with its own X column and Y columns (``ChartSpec.datasets``).
 """
 
 from __future__ import annotations
@@ -66,6 +67,13 @@ KINDS: dict[str, KindInfo] = {
 
 
 @dataclass
+class Dataset:
+    """One overlay on a line / scatter chart: an X column (blank: row order) and its Y columns."""
+    x: str = ""
+    ys: list[str] = field(default_factory=list)
+
+
+@dataclass
 class ChartSpec:
     kind: str = "line"
     x: str = ""
@@ -79,6 +87,7 @@ class ChartSpec:
     merge_numbered: bool = True  # line / scatter: "Chest 1", "Chest 2 (3)" -> one "Chest" series
     only_hits: bool = False  # line / scatter: only cells a condition counted for
     point_labels: bool = False  # line / scatter: label points with the text after their number
+    datasets: list[Dataset] = field(default_factory=list)  # line / scatter: more overlays, each its own X
 
     def y_columns(self) -> list[str]:
         """Every Y column: ``y`` then ``ys`` (without repeats); line and scatter only use ``ys``."""
@@ -86,6 +95,14 @@ class ChartSpec:
         if self.kind in MULTI_Y:
             cols += [c for c in self.ys if c and c not in cols]
         return cols
+
+    def all_datasets(self) -> list[Dataset]:
+        """The first dataset (``x`` with :meth:`y_columns`), then the extra ones that have a Y column."""
+        out = [Dataset(self.x, self.y_columns())]
+        if self.kind in MULTI_Y:
+            out += [Dataset(d.x, list(dict.fromkeys(c for c in d.ys if c))) for d in self.datasets
+                    if any(d.ys)]
+        return out
 
 
 _COPY = re.compile(r"\s*\(\d+\)$")
@@ -311,15 +328,11 @@ def _category_ticks(ax, cats: list[str], axis: str = "x"):
         ax.set_yticks(pos, cats)
 
 
-def _y_series(df, spec, notes, hits) -> list[tuple[str, list[str]]]:
-    """(label, Y columns) per series: one per column, or numbered columns merged by :func:`series_name`."""
-    cols = spec.y_columns()
-    if not cols:
-        raise ChartError("Choose a numeric column for Y")
+def _y_series(df, cols, spec) -> list[tuple[str, list[str]]]:
+    """(label, Y columns) per series of one dataset: one per column, or numbered columns merged by
+    :func:`series_name`."""
     for c in cols:
         _column(df, c, "Y")
-    if spec.only_hits and hits is None:
-        notes.append("No condition results to limit the points to; showing every value")
     if not spec.merge_numbered:
         return [(c, [c]) for c in cols]
     merged: dict[str, list[str]] = {}
@@ -345,46 +358,81 @@ def _series_values(df, cols, spec, hits, notes) -> pd.Series:
     return pd.concat(parts, keys=cols)
 
 
+_X_KINDS = {"date": "dates", "number": "numbers", "text": "text"}
+
+
+def _x_kind(s: pd.Series) -> str:
+    return "date" if is_date(s) else "number" if is_numeric(s) else "text"
+
+
+def _dataset_xs(df, datasets, spec, notes) -> tuple[list[pd.Series], list[str] | None]:
+    """Plot positions of every dataset's X (row order where blank), and the category labels when the
+    X columns hold text (shared by all datasets, so equal labels line up). Every X must be the same kind."""
+    kinds = []
+    for i, ds in enumerate(datasets):
+        if ds.x:
+            kinds.append(_x_kind(_column(df, ds.x, "X")))
+        elif spec.kind == "scatter":
+            raise ChartError("Choose a column for X" + (f" in dataset {i + 1}" if i else ""))
+        else:
+            kinds.append("number")  # row order
+    if len(set(kinds)) > 1:
+        raise ChartError("The datasets' X columns must all be dates, all numbers or all text ("
+                         + ", ".join(f"{ds.x or 'row order'}: {_X_KINDS[k]}" for ds, k in zip(datasets, kinds)) + ")")
+    if any(not ds.x for ds in datasets) and not any(is_date(df[c]) for c in df.columns):
+        notes.append("X is row order; add a date column (e.g. Monitor Date) to the outputs to plot over time")
+    if kinds[0] == "text":
+        labels = [df[ds.x].map(label) for ds in datasets]
+        cats = list(dict.fromkeys(v for lab in labels for v in lab))
+        codes = {c: i for i, c in enumerate(cats)}
+        return [lab.map(codes).astype(float) for lab in labels], cats
+    rows = pd.Series(np.arange(1, len(df) + 1, dtype=float), index=df.index)
+    return [_x_axis(df[ds.x])[0] if ds.x else rows for ds in datasets], None
+
+
 def _multi_y(fig, df, spec, notes, hits, plot):
-    """Line / scatter over every Y column: one series per (group, Y series)."""
+    """Line / scatter over every dataset's Y columns: one series per (dataset, group, Y series)."""
     ax = fig.add_subplot()
-    series = _y_series(df, spec, notes, hits)
-    if spec.x:
-        xs, cats = _x_axis(_column(df, spec.x, "X"))
-        ax.set_xlabel(spec.x)
-    elif spec.kind == "scatter":
-        raise ChartError("Choose a column for X")
-    else:
-        xs, cats = pd.Series(np.arange(1, len(df) + 1, dtype=float), index=df.index), None
-        ax.set_xlabel("Row")
-        if not any(is_date(df[c]) for c in df.columns):
-            notes.append("X is row order; add a date column (e.g. Monitor Date) to the outputs to plot over time")
+    datasets = spec.all_datasets()
+    if not datasets[0].ys:
+        raise ChartError("Choose a numeric column for Y")
+    series = [_y_series(df, ds.ys, spec) for ds in datasets]
+    if spec.only_hits and hits is None:
+        notes.append("No condition results to limit the points to; showing every value")
+    all_xs, cats = _dataset_xs(df, datasets, spec, notes)
+    ax.set_xlabel(" / ".join(dict.fromkeys(ds.x or "Row" for ds in datasets)))
     groups = _groups(df, spec.group)
-    named = len(series) > 1
+    named = sum(len(s) for s in series) > 1
+    overlaid = len(datasets) > 1
     labels: list[tuple[float, float, str]] = []
     ax.wbq_points = []  # (numeric xy array, tooltip per point) per series, for hovering in the app
-    drawn = 0
-    for gi, (gname, idx) in enumerate(groups):
-        for si, (sname, cols) in enumerate(series):
-            sub = df.loc[idx]
-            ys = _series_values(sub, cols, spec, hits.loc[idx] if hits is not None else None, notes)
-            d = pd.DataFrame({
-                "x": pd.concat([xs[idx]] * len(cols), keys=cols),
-                "y": ys,
-                "text": pd.concat([sub[c].map(_point_label) for c in cols], keys=cols),
-            }).dropna(subset=["x", "y"])
-            if spec.x and cats is None:
-                d = d.sort_values("x", kind="stable")
-            label = " · ".join(p for p in (sname if named else "", gname) if p) or None
-            artist = plot(ax, d, _color(gi * len(series) + si), label)
-            xy = artist.get_xydata() if hasattr(artist, "get_xydata") else artist.get_offsets()
-            raw = pd.concat([sub[c] for c in cols], keys=cols).reindex(d.index)
-            ax.wbq_points.append((np.asarray(xy, dtype=float), [
-                _tooltip(label or sname, col, raw_v, spec.x, df.loc[row, spec.x] if spec.x else None)
-                for (col, row), raw_v in zip(d.index, raw)]))
-            drawn += len(d)
-            if spec.point_labels:
-                labels += [(x, y, t) for x, y, t in zip(d["x"], d["y"], d["text"]) if t]
+    drawn = n = 0
+    for ds, ds_series, xs in zip(datasets, series, all_xs):
+        for gname, idx in groups:
+            for sname, cols in ds_series:
+                sub = df.loc[idx]
+                ys = _series_values(sub, cols, spec, hits.loc[idx] if hits is not None else None, notes)
+                d = pd.DataFrame({
+                    "x": pd.concat([xs[idx]] * len(cols), keys=cols),
+                    "y": ys,
+                    "text": pd.concat([sub[c].map(_point_label) for c in cols], keys=cols),
+                }).dropna(subset=["x", "y"])
+                if ds.x and cats is None:
+                    d = d.sort_values("x", kind="stable")
+                name = " · ".join(p for p in (sname if named else "", gname) if p)
+                if overlaid:
+                    name = f"{name or sname} ({ds.x or 'row order'})"
+                label = name or None
+                artist = plot(ax, d, _color(n), label)
+                n += 1
+                xy = artist.get_xydata() if hasattr(artist, "get_xydata") else artist.get_offsets()
+                raw = pd.concat([sub[c] for c in cols], keys=cols).reindex(d.index)
+                ax.wbq_points.append((np.asarray(xy, dtype=float), [
+                    _tooltip(label or sname, col, raw_v, ds.x, df.loc[row, ds.x] if ds.x else None)
+                    for (col, row), raw_v in zip(d.index, raw)]))
+                drawn += len(d)
+                if spec.point_labels:
+                    labels += [(x, y, t) for x, y, t in zip(d["x"], d["y"], d["text"]) if t]
     if not drawn:
         raise ChartError("No numeric values to plot" + (" in the cells the conditions matched"
                                                         if spec.only_hits and hits is not None else ""))
@@ -395,8 +443,9 @@ def _multi_y(fig, df, spec, notes, hits, plot):
     ax.wbq_label_total = len(labels)
     if cats:
         _category_ticks(ax, cats)
-    ax.set_ylabel(spec.y_columns()[0] if len(spec.y_columns()) == 1 else
-                  ", ".join(name for name, _ in series) if len(series) <= 4 else "Value")
+    y_cols = list(dict.fromkeys(c for ds in datasets for c in ds.ys))
+    names = list(dict.fromkeys(name for s in series for name, _ in s))
+    ax.set_ylabel(y_cols[0] if len(y_cols) == 1 else ", ".join(names) if len(names) <= 4 else "Value")
     return [ax]
 
 
@@ -651,7 +700,7 @@ def draw(fig: Figure, df: pd.DataFrame, spec: ChartSpec, hits: pd.DataFrame | No
             ax.grid(True, alpha=0.3)
     if spec.title:
         fig.suptitle(spec.title)
-    if spec.kind in ("line", "scatter") and spec.x in df.columns and is_date(df[spec.x]):
+    if spec.kind in MULTI_Y and any(ds.x in df.columns and is_date(df[ds.x]) for ds in spec.all_datasets()):
         fig.autofmt_xdate()
     try:
         fig.tight_layout()

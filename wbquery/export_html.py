@@ -26,7 +26,7 @@ table { border-collapse:collapse; width:100%; font-variant-numeric:tabular-nums;
 th, td { padding:5px 10px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
 th { background:var(--head); position:sticky; top:0; }
 tbody tr:nth-child(even) td { background:var(--stripe); }
-table.kv th { width:12em; white-space:normal; } table.kv td { white-space:normal; }
+table.kv th { width:12em; white-space:normal; } table.kv td { white-space:pre-line; }
 code { font-size:12px; }
 """
 
@@ -54,7 +54,8 @@ def _table(df: pd.DataFrame, colors: pd.DataFrame | None = None) -> str:
     return f'<div class="scroll"><table><thead><tr>{head}</tr></thead><tbody>\n{body}\n</tbody></table></div>'
 
 
-def render_html(result: QueryResult, title: str = "Workbook Query results") -> str:
+def render_html(result: QueryResult, title: str = "") -> str:
+    title = title or result.query.name.strip() or "Workbook Query results"
     kv = "".join(f"<tr><th>{html.escape(k)}</th><td>{html.escape(str(v))}</td></tr>" for k, v in summary_rows(result))
     warn = "".join(f'<p class="warn">⚠ {html.escape(w)}</p>' for w in result.warnings)
     src_head = "".join(f"<th>{h}</th>" for h in SOURCE_HEADERS)

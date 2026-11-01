@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import html
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,10 +14,10 @@ from PySide6.QtCore import QAbstractTableModel, QModelIndex, QSortFilterProxyMod
 from PySide6.QtGui import QColor, QIcon, QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
     QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QColorDialog, QComboBox, QCompleter, QDialog,
-    QDialogButtonBox, QFileDialog,
-    QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMainWindow,
-    QMenu, QMessageBox, QPushButton, QRadioButton, QScrollArea, QSplitter, QTableView, QTableWidget, QTableWidgetItem,
-    QTabWidget, QToolBox, QToolButton, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget,
+    QDialogButtonBox, QFileDialog, QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QListWidget,
+    QListWidgetItem, QMainWindow, QMenu, QMessageBox, QPlainTextEdit, QPushButton, QRadioButton, QScrollArea,
+    QSplitter, QTableView, QTableWidget, QTableWidgetItem, QTabWidget, QToolBox, QToolButton, QTreeWidget,
+    QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 
 from . import __version__, loader
@@ -1015,6 +1016,22 @@ class MainWindow(QMainWindow):
         left = QWidget()
         llay = QVBoxLayout(left)
 
+        about_box = QGroupBox("Query")
+        alay = QGridLayout(about_box)
+        self.name_edit = QLineEdit()
+        self.name_edit.setPlaceholderText("Name it, e.g. EOJ personnel hits, full year")
+        self.description_edit = QPlainTextEdit()
+        self.description_edit.setPlaceholderText("What it finds and why, so you remember later "
+                                                 "(saved with the query and shown in exports)")
+        self.description_edit.setTabChangesFocus(True)
+        self.description_edit.setFixedHeight(self.description_edit.fontMetrics().lineSpacing() * 4 + 12)
+        alay.addWidget(QLabel("Name"), 0, 0)
+        alay.addWidget(self.name_edit, 0, 1)
+        alay.addWidget(QLabel("Description"), 1, 0, Qt.AlignTop)
+        alay.addWidget(self.description_edit, 1, 1)
+        self.name_edit.textChanged.connect(self._update_title)
+        llay.addWidget(about_box)
+
         src_box = QGroupBox("Workbook sheets")
         slay = QVBoxLayout(src_box)
         self.src_table = QTableWidget(0, len(self.SRC_COLS))
@@ -1350,7 +1367,13 @@ class MainWindow(QMainWindow):
             mode="join" if self.join_radio.isChecked() else "independent",
             join_how=self.join_how_box.currentText(),
             include_provenance=self.provenance_check.isChecked(),
+            name=self.name_edit.text().strip(),
+            description=self.description_edit.toPlainText().strip(),
         )
+
+    def _update_title(self, *_):
+        name = self.name_edit.text().strip()
+        self.setWindowTitle(f"{name} — {APP} {__version__}" if name else f"{APP} {__version__}")
 
     def apply_query(self, query: Query) -> bool:
         """Replace everything with ``query``'s sources, conditions and outputs."""
@@ -1369,8 +1392,13 @@ class MainWindow(QMainWindow):
             if e.source.alias not in query.outputs:
                 self.outputs.set_checked(e.source.alias, [])
         self.conditions.set_group(query.where)
+        self.name_edit.setText(query.name)
+        self.description_edit.setPlainText(query.description)
         self._clear_results()
         self._sources_changed_status()
+        if query.name:
+            n = len(self.entries)
+            self.status_label.setText(f"Loaded <b>{_esc(query.name)}</b> with {n} sheet{'s' if n != 1 else ''}.")
         return ok
 
     def _sources_changed_status(self):
@@ -1380,7 +1408,8 @@ class MainWindow(QMainWindow):
 
     def save_query(self, path: str | None = None) -> Path | None:
         if path is None:
-            path, _ = QFileDialog.getSaveFileName(self, "Save query", "query.json", "Query (*.json)")
+            stem = re.sub(r"[^\w\- ]+", "", self.name_edit.text()).strip().replace(" ", "_") or "query"
+            path, _ = QFileDialog.getSaveFileName(self, "Save query", f"{stem}.json", "Query (*.json)")
             if not path:
                 return None
         try:

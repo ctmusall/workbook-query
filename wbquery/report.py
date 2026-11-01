@@ -7,7 +7,8 @@ from .query import QueryResult
 
 def summary_rows(result: QueryResult) -> list[tuple[str, str | int]]:
     q = result.query
-    rows = [("Mode", "Join on key columns" if q.mode == "join" else "Each sheet filtered on its own")]
+    rows = [(label, text) for label, text in (("Query", q.name), ("Description", q.description)) if text.strip()]
+    rows += [("Mode", "Join on key columns" if q.mode == "join" else "Each sheet filtered on its own")]
     if q.mode == "join":
         rows.append(("Join type", q.join_how))
         rows.append(("Keys", ", ".join(f"{s.alias} › {s.key}" for s in q.sources)))
