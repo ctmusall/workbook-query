@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from . import __version__
+from .conditions import text_color
 from .query import QueryResult
 from .report import SOURCE_HEADERS, source_rows, summary_rows
 
@@ -30,7 +31,7 @@ code { font-size:12px; }
 """
 
 
-def _table(df: pd.DataFrame) -> str:
+def _table(df: pd.DataFrame, colors: pd.DataFrame | None = None) -> str:
     def cell(v):
         if v is None or (not isinstance(v, str) and pd.isna(v)):
             return ""
@@ -39,8 +40,17 @@ def _table(df: pd.DataFrame) -> str:
         return str(v)
 
     head = "".join(f"<th>{html.escape(str(c))}</th>" for c in df.columns)
-    body = "\n".join("<tr>" + "".join(f"<td>{html.escape(cell(v))}</td>" for v in row) + "</tr>"
-                     for row in df.itertuples(index=False, name=None))
+
+    def td(v, color):
+        style = f' style="background:{color};color:{text_color(color)}"' if color else ""
+        return f"<td{style}>{html.escape(cell(v))}</td>"
+
+    rows = df.itertuples(index=False, name=None)
+    if colors is None:
+        colors = pd.DataFrame("", index=df.index, columns=df.columns)
+    marks = colors.itertuples(index=False, name=None)
+    body = "\n".join("<tr>" + "".join(td(v, c) for v, c in zip(row, mark)) + "</tr>"
+                     for row, mark in zip(rows, marks))
     return f'<div class="scroll"><table><thead><tr>{head}</tr></thead><tbody>\n{body}\n</tbody></table></div>'
 
 
@@ -53,7 +63,7 @@ def render_html(result: QueryResult, title: str = "Workbook Query results") -> s
                        for r in source_rows(result))
     sections = "".join(
         f"<h2>{html.escape(name)} <span class=\"muted\">({len(df)} row{'s' if len(df) != 1 else ''})</span></h2>"
-        + _table(df) for name, df in result.tables.items())
+        + _table(df, result.colors.get(name)) for name, df in result.tables.items())
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{html.escape(title)}</title><style>{CSS}</style></head>

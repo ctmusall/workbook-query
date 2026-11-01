@@ -9,6 +9,7 @@ import pandas as pd
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
 
+from .conditions import text_color
 from .query import QueryResult
 from .report import SOURCE_HEADERS, source_rows, summary_rows
 
@@ -45,6 +46,21 @@ def _style_table(ws):
     _autosize(ws)
 
 
+def _highlight(ws, colors: pd.DataFrame | None):
+    """Fill each cell a condition colored (row 1 is the header)."""
+    if colors is None:
+        return
+    fills: dict[str, tuple[PatternFill, Font]] = {}
+    for j, col in enumerate(colors.columns, start=1):
+        for i in (colors[col] != "").to_numpy().nonzero()[0]:
+            color = colors[col].iat[i]
+            if color not in fills:
+                fills[color] = (PatternFill("solid", fgColor=color[1:].upper()),
+                                Font(color=text_color(color)[1:].upper()))
+            cell = ws.cell(int(i) + 2, j)
+            cell.fill, cell.font = fills[color]
+
+
 def write_xlsx(result: QueryResult, path: str | Path) -> Path:
     path = Path(path)
     if path.suffix.lower() != ".xlsx":
@@ -58,6 +74,7 @@ def write_xlsx(result: QueryResult, path: str | Path) -> Path:
         wb = xw.book
         for name in result.tables:
             _style_table(wb[names[name]])
+            _highlight(wb[names[name]], result.colors.get(name))
 
         ws = wb.create_sheet("Query", 0)
         for label, value in summary_rows(result):

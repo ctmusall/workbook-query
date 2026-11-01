@@ -2,19 +2,23 @@
 
 ``draw(fig, df, spec)`` clears ``fig`` and draws the chart ``spec`` describes. Values are
 read the same way the query reads them: numbers as numbers, text such as ``1,000``,
-``5e7`` or ``50%`` parsed (see :func:`conditions.parse_number`), anything else skipped.
+``5e7``, ``50%`` or ``1 Micrococcus luteus`` (-> 1) parsed (see :func:`loader.cell_number`),
+anything else skipped. Line and scatter charts can take several Y columns; numbered columns
+(``Chest 1``, ``Chest 2 (3)``) can merge into one series (``Chest``), and ``only_hits`` keeps
+just the cells a condition counted for (``QueryResult.hits``).
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 
-from .conditions import parse_number
+from .loader import cell_number, leading_number
 
 AGGREGATES = ("count", "sum", "mean", "median", "min", "max")
 MAX_CATEGORIES = 50
@@ -25,6 +29,8 @@ LIMIT_COLOR = "#c0392b"
 CENTER_COLOR = "#2c7a3f"
 BLANK = "(blank)"
 OTHER = "Other"
+MAX_POINT_LABELS = 60  # points labeled with the text after their number ("Micrococcus luteus")
+MULTI_Y = ("line", "scatter")
 
 
 class ChartError(ValueError):
@@ -69,6 +75,27 @@ class ChartSpec:
     bins: int = 20
     stacked: bool = False
     title: str = ""
+    ys: list[str] = field(default_factory=list)  # line / scatter: more Y columns after ``y``
+    merge_numbered: bool = True  # line / scatter: "Chest 1", "Chest 2 (3)" -> one "Chest" series
+    only_hits: bool = False  # line / scatter: only cells a condition counted for
+    point_labels: bool = False  # line / scatter: label points with the text after their number
+
+    def y_columns(self) -> list[str]:
+        """Every Y column: ``y`` then ``ys`` (without repeats); line and scatter only use ``ys``."""
+        cols = [self.y] if self.y else []
+        if self.kind in MULTI_Y:
+            cols += [c for c in self.ys if c and c not in cols]
+        return cols
+
+
+_COPY = re.compile(r"\s*\(\d+\)$")
+_NUMBERED = re.compile(r"\s*\d+$")
+
+
+def series_name(column: str) -> str:
+    """The series a numbered column belongs to: ``Chest 1 (2)`` -> ``Chest``, ``Hand 2`` -> ``Hand``."""
+    base = _NUMBERED.sub("", _COPY.sub("", str(column)))
+    return base or str(column)
 
 
 # --- reading values ------------------------------------------------------------
@@ -82,11 +109,15 @@ def _to_float(v) -> float:
         return np.nan
     if isinstance(v, (pd.Timestamp, np.datetime64)):
         return np.nan
-    try:
-        f = parse_number(v)
-    except ValueError:
-        return np.nan
-    return np.nan if f is None else f
+    return cell_number(v)
+
+
+def _point_label(v) -> str:
+    """The text after a cell's number (``1 Micrococcus luteus`` -> ``Micrococcus luteus``), else ''."""
+    if not isinstance(v, str):
+        return ""
+    lead = leading_number(v)
+    return lead[1] if lead else ""
 
 
 def numeric(s: pd.Series) -> pd.Series:
@@ -280,38 +311,96 @@ def _category_ticks(ax, cats: list[str], axis: str = "x"):
         ax.set_yticks(pos, cats)
 
 
-def _line(fig, df, spec, notes):
+def _y_series(df, spec, notes, hits) -> list[tuple[str, list[str]]]:
+    """(label, Y columns) per series: one per column, or numbered columns merged by :func:`series_name`."""
+    cols = spec.y_columns()
+    if not cols:
+        raise ChartError("Choose a numeric column for Y")
+    for c in cols:
+        _column(df, c, "Y")
+    if spec.only_hits and hits is None:
+        notes.append("No condition results to limit the points to; showing every value")
+    if not spec.merge_numbered:
+        return [(c, [c]) for c in cols]
+    merged: dict[str, list[str]] = {}
+    for c in cols:
+        merged.setdefault(series_name(c), []).append(c)
+    return list(merged.items())
+
+
+def _series_values(df, cols, spec, hits, notes) -> pd.Series:
+    """Every column's numeric values as one Series indexed by (column, row): NaN where blank,
+    unreadable, or (with ``only_hits``) not a cell a condition counted for."""
+    parts = []
+    for c in cols:
+        raw = df[c]
+        vals = numeric(raw)
+        keep = np.ones(len(df), dtype=bool)
+        if spec.only_hits and hits is not None:
+            keep = hits[c].to_numpy(dtype=bool) if c in hits.columns else np.zeros(len(df), dtype=bool)
+        skipped = int((vals.isna() & ~raw.map(_is_blank) & keep).sum())
+        if skipped:
+            notes.append(f"{skipped} non-numeric value{'s' if skipped != 1 else ''} in '{c}' skipped")
+        parts.append(vals.where(keep))
+    return pd.concat(parts, keys=cols)
+
+
+def _multi_y(fig, df, spec, notes, hits, plot):
+    """Line / scatter over every Y column: one series per (group, Y series)."""
     ax = fig.add_subplot()
-    y = _y_values(df, spec.y, notes)
+    series = _y_series(df, spec, notes, hits)
     if spec.x:
         xs, cats = _x_axis(_column(df, spec.x, "X"))
         ax.set_xlabel(spec.x)
+    elif spec.kind == "scatter":
+        raise ChartError("Choose a column for X")
     else:
         xs, cats = pd.Series(np.arange(1, len(df) + 1, dtype=float), index=df.index), None
         ax.set_xlabel("Row")
-    for i, (name, idx) in enumerate(_groups(df, spec.group)):
-        d = pd.DataFrame({"x": xs[idx], "y": y[idx]}).dropna()
-        if spec.x and cats is None:
-            d = d.sort_values("x", kind="stable")
-        ax.plot(d["x"], d["y"], marker="o", markersize=3, linewidth=1.3, color=_color(i), label=name or None)
+        if not any(is_date(df[c]) for c in df.columns):
+            notes.append("X is row order; add a date column (e.g. Monitor Date) to the outputs to plot over time")
+    groups = _groups(df, spec.group)
+    named = len(series) > 1
+    labels: list[tuple[float, float, str]] = []
+    drawn = 0
+    for gi, (gname, idx) in enumerate(groups):
+        for si, (sname, cols) in enumerate(series):
+            sub = df.loc[idx]
+            ys = _series_values(sub, cols, spec, hits.loc[idx] if hits is not None else None, notes)
+            d = pd.DataFrame({
+                "x": pd.concat([xs[idx]] * len(cols), keys=cols),
+                "y": ys,
+                "text": pd.concat([sub[c].map(_point_label) for c in cols], keys=cols),
+            }).dropna(subset=["x", "y"])
+            if spec.x and cats is None:
+                d = d.sort_values("x", kind="stable")
+            label = " · ".join(p for p in (sname if named else "", gname) if p) or None
+            plot(ax, d, _color(gi * len(series) + si), label)
+            drawn += len(d)
+            if spec.point_labels:
+                labels += [(x, y, t) for x, y, t in zip(d["x"], d["y"], d["text"]) if t]
+    if not drawn:
+        raise ChartError("No numeric values to plot" + (" in the cells the conditions matched"
+                                                        if spec.only_hits and hits is not None else ""))
+    for x, y, text in labels[:MAX_POINT_LABELS]:
+        ax.annotate(text, (x, y), xytext=(4, 4), textcoords="offset points", fontsize=7, alpha=0.85)
+    if len(labels) > MAX_POINT_LABELS:
+        notes.append(f"Labeled the first {MAX_POINT_LABELS} of {len(labels)} points with text after the number")
     if cats:
         _category_ticks(ax, cats)
-    ax.set_ylabel(spec.y)
+    ax.set_ylabel(spec.y_columns()[0] if len(spec.y_columns()) == 1 else
+                  ", ".join(name for name, _ in series) if len(series) <= 4 else "Value")
     return [ax]
 
 
-def _scatter(fig, df, spec, notes):
-    ax = fig.add_subplot()
-    y = _y_values(df, spec.y, notes)
-    xs, cats = _x_axis(_column(df, spec.x, "X"))
-    for i, (name, idx) in enumerate(_groups(df, spec.group)):
-        d = pd.DataFrame({"x": xs[idx], "y": y[idx]}).dropna()
-        ax.scatter(d["x"], d["y"], s=22, alpha=0.8, color=_color(i), label=name or None)
-    if cats:
-        _category_ticks(ax, cats)
-    ax.set_xlabel(spec.x)
-    ax.set_ylabel(spec.y)
-    return [ax]
+def _line(fig, df, spec, notes, hits=None):
+    return _multi_y(fig, df, spec, notes, hits, lambda ax, d, color, label: ax.plot(
+        d["x"], d["y"], marker="o", markersize=3, linewidth=1.3, color=color, label=label))
+
+
+def _scatter(fig, df, spec, notes, hits=None):
+    return _multi_y(fig, df, spec, notes, hits, lambda ax, d, color, label: ax.scatter(
+        d["x"], d["y"], s=22, alpha=0.8, color=color, label=label))
 
 
 def _bar(fig, df, spec, notes):
@@ -480,8 +569,9 @@ _DRAW = {"line": _line, "scatter": _scatter, "bar": _bar, "grouped_bar": _groupe
          "box": _box, "pie": _pie, "heatmap": _heatmap, "imr": _imr}
 
 
-def draw(fig: Figure, df: pd.DataFrame, spec: ChartSpec) -> list[str]:
-    """Clear ``fig`` and draw ``spec`` from ``df``. Returns notes about skipped data;
+def draw(fig: Figure, df: pd.DataFrame, spec: ChartSpec, hits: pd.DataFrame | None = None) -> list[str]:
+    """Clear ``fig`` and draw ``spec`` from ``df``. ``hits`` (same shape as ``df``) marks the cells
+    a condition counted for, used by ``spec.only_hits``. Returns notes about skipped data;
     raises :class:`ChartError` when the chosen columns can't make the chart."""
     fig.clear()
     if spec.kind not in KINDS:
@@ -495,7 +585,8 @@ def draw(fig: Figure, df: pd.DataFrame, spec: ChartSpec) -> list[str]:
         raise ChartError(f"Choose a column for {info.x_label}")
     notes: list[str] = []
     try:
-        axes = _DRAW[spec.kind](fig, df, spec, notes)
+        axes = _DRAW[spec.kind](fig, df, spec, notes, hits) if spec.kind in MULTI_Y \
+            else _DRAW[spec.kind](fig, df, spec, notes)
     except ChartError:
         fig.clear()
         raise

@@ -26,7 +26,7 @@ from pathlib import Path
 import pandas as pd
 
 from . import loader
-from .conditions import ANY_SOURCE, Condition, Group, evaluate, resolve_column
+from .conditions import ANY_SOURCE, Condition, Group, cell_hits, evaluate, resolve_column
 from .proof import file_sha256
 
 MODES = ("independent", "join")
@@ -114,6 +114,10 @@ class QueryResult:
     sources: list[dict]  # alias, path, sheet, rows, matched, sha256
     query: Query
     run_at: datetime
+    # Per table, same shape and columns: the cells a condition counted for, and the highlight color
+    # of the first colored condition that counted there ("" for none). See conditions.cell_hits.
+    hits: dict[str, pd.DataFrame] = field(default_factory=dict)
+    colors: dict[str, pd.DataFrame] = field(default_factory=dict)
 
 
 def default_alias(path: str | Path, sheet: str) -> str:
@@ -221,16 +225,37 @@ def run_query(query: Query, frames: dict[str, pd.DataFrame] | None = None) -> Qu
         raise ValueError("\n".join(errors))
     warnings: list[str] = []
     if query.mode == "join":
-        tables, matched = _run_join(query, frames, warnings)
+        tables, matched, cells = _run_join(query, frames, warnings)
     else:
-        tables, matched = _run_independent(query, frames, warnings)
+        tables, matched, cells = _run_independent(query, frames, warnings)
     info = [{"alias": s.alias, "path": str(s.path), "sheet": s.sheet, "rows": len(frames[s.alias]),
              "matched": matched.get(s.alias), "sha256": file_sha256(s.path)} for s in query.sources]
-    return QueryResult(tables, warnings, info, query, datetime.now())
+    hits = {name: cells[name][0] for name in tables}
+    colors = {name: cells[name][1] for name in tables}
+    return QueryResult(tables, warnings, info, query, datetime.now(), hits, colors)
+
+
+def _cell_frames(table: pd.DataFrame, rows: pd.Index, found, rename=lambda c: c):
+    """(hits, colors) frames shaped like ``table`` for the matched ``rows`` of the frame that
+    ``found`` (from :func:`cell_hits`) was computed on; ``rename`` maps a tested column to its name
+    in ``table``."""
+    hits = pd.DataFrame(False, index=range(len(table)), columns=table.columns)
+    colors = pd.DataFrame("", index=range(len(table)), columns=table.columns)
+    for cond, col, mask in found:
+        name = rename(col)
+        if name not in table.columns:
+            continue
+        hit = mask.reindex(rows).fillna(False).to_numpy(dtype=bool)
+        if not hit.any():
+            continue
+        if cond.color:
+            colors.loc[hit & (colors[name] == "").to_numpy(), name] = cond.color  # first color wins
+        hits[name] = hits[name].to_numpy(dtype=bool) | hit
+    return hits, colors
 
 
 def _run_independent(query, frames, warnings):
-    tables, matched = {}, {}
+    tables, matched, cells = {}, {}, {}
     filtering = bool(query.where.conditions(active=True))
     untested = []
     for s in query.sources:
@@ -256,14 +281,17 @@ def _run_independent(query, frames, warnings):
             out.insert(0, SHEET_COL, s.sheet)
             out.insert(0, FILE_COL, Path(s.path).name)
         tables[s.alias] = out.reset_index(drop=True)
+        cells[s.alias] = _cell_frames(tables[s.alias], rows.index, cell_hits(query.where, column_for))
     if untested:
         names = ", ".join(untested[:5]) + (f" and {len(untested) - 5} more" if len(untested) > 5 else "")
         n = len(untested)
         warnings.append(f"{n} sheet{'s' if n != 1 else ''} lack every column the conditions test, so "
                         f"{'they match' if n != 1 else 'it matches'} no rows: {names}")
     if len(tables) >= 2:
-        return {COMBINED: _combine(tables, query.include_provenance), **tables}, matched
-    return tables, matched
+        combined = _combine(tables, query.include_provenance)
+        cells[COMBINED] = _combine_cells(combined, [cells[a] for a in tables])
+        return {COMBINED: combined, **tables}, matched, cells
+    return tables, matched, cells
 
 
 def _combine(tables: dict[str, pd.DataFrame], provenance: bool) -> pd.DataFrame:
@@ -275,6 +303,15 @@ def _combine(tables: dict[str, pd.DataFrame], provenance: bool) -> pd.DataFrame:
             t.insert(0, SOURCE_COL, alias)
         parts.append(t)
     return pd.concat(parts, ignore_index=True, sort=False)
+
+
+def _combine_cells(combined: pd.DataFrame, parts: list[tuple[pd.DataFrame, pd.DataFrame]]):
+    """Stack per-source (hits, colors) the way :func:`_combine` stacks the tables."""
+    hits = pd.concat([h for h, _ in parts], ignore_index=True, sort=False)
+    colors = pd.concat([c for _, c in parts], ignore_index=True, sort=False)
+    hits = hits.reindex(columns=combined.columns).astype(object).fillna(False).astype(bool)
+    colors = colors.reindex(columns=combined.columns).astype(object).fillna("")
+    return hits, colors
 
 
 def normalize_key(value, blank_token: str):
@@ -352,4 +389,5 @@ def _run_join(query, frames, warnings):
         if c.endswith(f" {ROW_COL}"):
             out[c] = out[c].astype("Int64")
     matched = {s.alias: int(rows[f"{_PRESENT}{s.alias}"].notna().sum()) for s in query.sources}
-    return {JOINED: out.reset_index(drop=True)}, matched
+    out = out.reset_index(drop=True)
+    return {JOINED: out}, matched, {JOINED: _cell_frames(out, rows.index, cell_hits(query.where, column_for))}

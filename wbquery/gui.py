@@ -3,24 +3,25 @@
 from __future__ import annotations
 
 import copy
+import html
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, QSortFilterProxyModel, QStringListModel, Qt
-from PySide6.QtGui import QIcon, QKeySequence, QShortcut
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, QSortFilterProxyModel, QStringListModel, Qt, Signal
+from PySide6.QtGui import QColor, QIcon, QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
-    QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QComboBox, QCompleter, QDialog, QDialogButtonBox,
-    QFileDialog,
+    QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QColorDialog, QComboBox, QCompleter, QDialog,
+    QDialogButtonBox, QFileDialog,
     QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMainWindow,
     QMenu, QMessageBox, QPushButton, QRadioButton, QScrollArea, QSplitter, QTableView, QTableWidget, QTableWidgetItem,
-    QTabWidget, QToolBox, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget,
+    QTabWidget, QToolBox, QToolButton, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 
 from . import __version__, loader
 from .conditions import ANY_SOURCE, LOGIC, NO_VALUE_OPERATORS, OPERATORS, Condition, Group, column_key, \
-    parse_number, resolve_column, sort_columns
+    parse_number, resolve_column, sort_columns, text_color
 from .query import JOIN_HOW, Query, QueryResult, Source, default_alias, is_provenance, load_query, run_query, \
     save_query, unique_alias
 
@@ -29,6 +30,11 @@ ANY_LABEL = "Any sheet"
 WORKBOOK_FILTER = "Workbooks (*.xlsx *.xlsm *.xls *.csv *.tsv *.txt);;All files (*)"
 MAX_SUGGESTIONS = 1000
 ICON = Path(__file__).resolve().parent / "assets" / "icon.png"
+
+
+def _esc(text) -> str:
+    """``text`` for a rich-text label: ``<`` ``>`` ``&`` escaped so condition text such as ``<> '0'`` shows."""
+    return html.escape(str(text), quote=False)
 
 
 def _is_blank(v) -> bool:
@@ -83,9 +89,10 @@ class Entry:
 class FrameModel(QAbstractTableModel):
     """Read-only view of a DataFrame."""
 
-    def __init__(self, df: pd.DataFrame, parent=None):
+    def __init__(self, df: pd.DataFrame, parent=None, colors: pd.DataFrame | None = None):
         super().__init__(parent)
         self.df = df
+        self.colors = colors  # same shape as df: "#rrggbb" highlight per cell, "" for none
 
     def rowCount(self, parent=QModelIndex()):
         return 0 if parent.isValid() else len(self.df)
@@ -103,6 +110,10 @@ class FrameModel(QAbstractTableModel):
             if _is_blank(v):
                 return None
             return v if isinstance(v, (int, float)) else str(v)
+        if role in (Qt.BackgroundRole, Qt.ForegroundRole) and self.colors is not None:
+            color = self.colors.iat[index.row(), index.column()]
+            if color:
+                return QColor(color if role == Qt.BackgroundRole else text_color(color))
         return None
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
@@ -151,7 +162,8 @@ class ColumnPicker(QDialog):
     ``rows`` are (column, sheets that have it, initial state). A row starting partly checked
     (ticked in some sheets only) keeps a third, "leave as is" state."""
 
-    def __init__(self, title: str, prompt: str, rows: list[tuple[str, list[str], Qt.CheckState]], parent=None):
+    def __init__(self, title: str, prompt: str, rows: list[tuple[str, list[str], Qt.CheckState]], parent=None,
+                 show_sheets: bool = True):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(420, 480)
@@ -167,9 +179,10 @@ class ColumnPicker(QDialog):
         self.list = QListWidget()
         for col, sheets, state in rows:
             n = len(sheets)
-            item = QListWidgetItem(f"{col}   ({n} sheet{'s' if n != 1 else ''})")
+            item = QListWidgetItem(f"{col}   ({n} sheet{'s' if n != 1 else ''})" if show_sheets else col)
             item.setData(Qt.UserRole, col)
-            item.setToolTip("In: " + ", ".join(sheets))
+            if show_sheets:
+                item.setToolTip("In: " + ", ".join(sheets))
             flags = item.flags() | Qt.ItemIsUserCheckable
             if state == Qt.PartiallyChecked:
                 flags |= Qt.ItemIsUserTristate
@@ -240,8 +253,11 @@ class SharedColumnPicker(ColumnPicker):
         self.op_box = _combo(OPERATORS, "=")
         self.value_edit = QLineEdit()
         self.value_edit.setPlaceholderText("value (lists: a, b, c) — can be left blank to fill in later")
+        self.color_btn = ColorButton()
         row.addWidget(self.op_box)
         row.addWidget(self.value_edit, 1)
+        row.addWidget(QLabel("Highlight"))
+        row.addWidget(self.color_btn)
         grid.addLayout(row)
         place = QHBoxLayout()
         place.addWidget(QLabel("Put them in"))
@@ -273,6 +289,9 @@ class SharedColumnPicker(ColumnPicker):
         op = self.op_box.currentText()
         return op, "" if op in NO_VALUE_OPERATORS else self.value_edit.text()
 
+    def color(self) -> str:
+        return self.color_btn.color()
+
     def group_logic(self) -> str | None:
         """None for the selected group, else the new group's AND / OR."""
         return {PLACE_OR: "OR", PLACE_AND: "AND"}.get(self.place_box.currentText())
@@ -299,6 +318,54 @@ class SharedColumnPicker(ColumnPicker):
         super().accept()
 
 
+class ColorButton(QToolButton):
+    """A swatch for a condition's highlight color: click to choose, right-click for "No color".
+    ``mixed`` shows a group whose conditions have different colors."""
+
+    colorChanged = Signal(str)
+
+    def __init__(self, color: str = "", parent=None):
+        super().__init__(parent)
+        self._color = ""
+        self._mixed = False
+        self.setAutoRaise(True)
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self._menu)
+        self.clicked.connect(self.choose)
+        self.set_color(color)
+
+    def color(self) -> str:
+        return self._color
+
+    def set_color(self, color: str, mixed: bool = False):
+        self._color, self._mixed = color or "", mixed and not color
+        pix = QPixmap(16, 16)
+        pix.fill(QColor(self._color) if self._color else Qt.transparent)
+        self.setIcon(QIcon(pix))
+        self.setText("" if self._color else ("…" if self._mixed else "–"))
+        self.setToolButtonStyle(Qt.ToolButtonIconOnly if self._color else Qt.ToolButtonTextOnly)
+        tip = (f"Highlight {self._color}" if self._color else
+               "Colors differ" if self._mixed else "No highlight")
+        self.setToolTip(tip + " — click to choose a color for the cells this condition matches, "
+                              "right-click for no color")
+
+    def _apply(self, color: str):
+        if color != self._color or self._mixed:
+            self.set_color(color)
+            self.colorChanged.emit(color)
+
+    def choose(self):
+        picked = QColorDialog.getColor(QColor(self._color or "#ffd54f"), self, "Highlight color")
+        if picked.isValid():
+            self._apply(picked.name())
+
+    def _menu(self, pos):
+        menu = QMenu(self)
+        menu.addAction("Choose color…", self.choose)
+        menu.addAction("No color", lambda: self._apply(""))
+        menu.exec(self.mapToGlobal(pos))
+
+
 def _combo(items, current: str | None = None) -> QComboBox:
     box = QComboBox()
     box.addItems(list(items))
@@ -313,7 +380,7 @@ class ConditionsEditor(QGroupBox):
     """A tree of AND/OR groups and conditions. The tree's widgets are the state; edits that change its
     shape go through :meth:`group` -> change -> :meth:`set_group` so the widgets are always rebuilt cleanly."""
 
-    COLS = ("Group / Sheet", "Name / Column", "Operator", "Value", "On")
+    COLS = ("Group / Sheet", "Name / Column", "Operator", "Value", "Color", "On")
 
     def __init__(self, window: "MainWindow"):
         super().__init__("Conditions")
@@ -327,7 +394,7 @@ class ConditionsEditor(QGroupBox):
         header.setStretchLastSection(False)
         header.setSectionResizeMode(QHeaderView.Interactive)
         header.setSectionResizeMode(3, QHeaderView.Stretch)
-        for col, width in ((0, 190), (1, 165), (2, 100), (4, 34)):
+        for col, width in ((0, 190), (1, 165), (2, 100), (4, 44), (5, 34)):
             self.tree.setColumnWidth(col, width)
         self.tree.setIndentation(14)
         self.tree.setMinimumWidth(560)
@@ -357,6 +424,7 @@ class ConditionsEditor(QGroupBox):
         lay.addLayout(row)
         self.preview = QLabel()
         self.preview.setWordWrap(True)
+        self.preview.setTextFormat(Qt.RichText)  # always: condition text is escaped, so `<>` shows
         self.preview.setTextInteractionFlags(Qt.TextSelectableByMouse)
         lay.addWidget(self.preview)
         self.add_cond_btn.clicked.connect(lambda: self.add_condition())
@@ -427,9 +495,12 @@ class ConditionsEditor(QGroupBox):
             for w in widgets:
                 lay.addWidget(w)
                 w.hide()
-        for col, w in ((1, name), (2, op_cell), (3, value_cell), (4, on)):
+        color = ColorButton()
+        color.colorChanged.connect(lambda c: self._bulk_set(item, color=c))
+        for col, w in ((1, name), (2, op_cell), (3, value_cell), (4, color), (5, on)):
             self.tree.setItemWidget(item, col, w)
         item._name, item._on, item._bulk_op, item._bulk_value, item._mixed = name, on, op, value, mixed
+        item._color = color
         item._bulk_cells = (op_cell, value_cell)
         op.currentTextChanged.connect(lambda text: self._bulk_set(item, op=text))
         value.textChanged.connect(lambda text: self._bulk_set(item, value=text))
@@ -487,13 +558,26 @@ class ConditionsEditor(QGroupBox):
         value.setVisible(uniform)
         item._mixed.setVisible(collapsed and not uniform)
 
-    def _bulk_set(self, item, op: str | None = None, value: str | None = None):
-        """Apply the collapsed group's operator or value to every condition in it."""
+    def _sync_colors(self, item=None):
+        """Each group's swatch shows its conditions' color when they all share one."""
+        for g in self._group_items(item):
+            if g._root:
+                continue
+            colors = {c._color.color() for c in self._condition_items(g)}
+            g._color.set_color(next(iter(colors)) if len(colors) == 1 else "", mixed=len(colors) > 1)
+
+    def _bulk_set(self, item, op: str | None = None, value: str | None = None, color: str | None = None):
+        """Apply a group's operator, value or highlight color to every condition in it."""
         for c in self._condition_items(item):
             if op is not None:
                 c._op.setCurrentText(op)
             if value is not None:
                 c._value.setText(value)
+            if color is not None:
+                c._color.set_color(color)
+        if color is not None:
+            self._sync_colors()
+            self.changed()
         if op is not None:
             item._bulk_value.setEnabled(op not in NO_VALUE_OPERATORS)
 
@@ -507,12 +591,12 @@ class ConditionsEditor(QGroupBox):
             if not item._root:
                 item._on.setEnabled(on)
                 on = on and item._on.isChecked()
-                for w in (item._box, item._name, *item._bulk_cells):
+                for w in (item._box, item._name, item._color, *item._bulk_cells):
                     w.setEnabled(on)
             for i in range(item.childCount()):
                 self._apply_enabled(item.child(i), on)
             return
-        for w in (item._source, item._column, item._op, item._on):
+        for w in (item._source, item._column, item._op, item._color, item._on):
             w.setEnabled(on)
         item._value.setEnabled(on and item._op.currentText() not in NO_VALUE_OPERATORS)
 
@@ -535,9 +619,11 @@ class ConditionsEditor(QGroupBox):
         value.returnPressed.connect(lambda: self.win.run())
         on = QCheckBox()
         on.setChecked(cond.enabled)
-        for col, w in enumerate((source, column, op, value, on)):
+        color = ColorButton(cond.color)
+        for col, w in enumerate((source, column, op, value, color, on)):
             self.tree.setItemWidget(item, col, w)
         item._source, item._column, item._op, item._value, item._on = source, column, op, value, on
+        item._color = color
         value.setEnabled(cond.op not in NO_VALUE_OPERATORS)
 
         def alias():
@@ -570,6 +656,7 @@ class ConditionsEditor(QGroupBox):
         column.currentTextChanged.connect(column_changed)
         value.textChanged.connect(self.changed)
         on.toggled.connect(self.changed)
+        color.colorChanged.connect(lambda _c: (self._sync_colors(), self.changed()))
         return item
 
     def _fill_columns(self, box: QComboBox, alias: str, current: str | None):
@@ -597,7 +684,7 @@ class ConditionsEditor(QGroupBox):
         if dlg.exec() != QDialog.Accepted:
             return []
         op, value = dlg.expression()
-        return self.add_shared_many(dlg.checked(), op, value, dlg.group_logic())
+        return self.add_shared_many(dlg.checked(), op, value, dlg.group_logic(), dlg.color())
 
     # --- model <-> widgets --------------------------------------------------
     def _read(self, item: QTreeWidgetItem):
@@ -609,7 +696,7 @@ class ConditionsEditor(QGroupBox):
                          item._on.isChecked(), not item.isExpanded())
         src = item._source.currentText()
         return Condition(ANY_SOURCE if src == ANY_LABEL else src, item._column.currentText() or "?",
-                         item._op.currentText(), item._value.text(), item._on.isChecked())
+                         item._op.currentText(), item._value.text(), item._on.isChecked(), item._color.color())
 
     def group(self) -> Group:
         return self._read(self.tree.topLevelItem(0))
@@ -638,6 +725,7 @@ class ConditionsEditor(QGroupBox):
                 self.tree.setCurrentItem(item)
         for g in groups:
             self._sync_bulk(g)
+        self._sync_colors()
         self._apply_enabled(self.tree.topLevelItem(0), True)
         self.add_shared_btn.setEnabled(bool(self.win.shared_columns()))
         self.changed()
@@ -651,7 +739,7 @@ class ConditionsEditor(QGroupBox):
             text = self.group().describe()
         except ValueError as exc:
             text = str(exc)
-        self.preview.setText(f"<b>Where:</b> {text}")
+        self.preview.setText(f"<b>Where:</b> {_esc(text)}")
 
     # --- paths: list of child indexes from the root group -----------------
     def _path(self, item) -> list[int] | None:
@@ -715,11 +803,11 @@ class ConditionsEditor(QGroupBox):
         return self.add_condition(Condition(ANY_SOURCE, column, "=", ""))
 
     def add_shared_many(self, columns: list[str], op: str = "=", value: str = "",
-                        new_group: str | None = None) -> list[Condition]:
+                        new_group: str | None = None, color: str = "") -> list[Condition]:
         """One any-sheet condition per column, all with ``op`` and ``value``: in the selected group, or in a
         new AND / OR group (``new_group``) added to it. The first condition is selected; when its value is
-        still blank its value box gets focus."""
-        added = [Condition(ANY_SOURCE, col, op, value) for col in columns]
+        still blank its value box gets focus. ``color`` is the highlight each condition gets."""
+        added = [Condition(ANY_SOURCE, col, op, value, color=color) for col in columns]
         if not added:
             return added
         model, gpath, _ = self._target()
@@ -999,6 +1087,7 @@ class MainWindow(QMainWindow):
         rlay.addLayout(bar)
         self.status_label = QLabel("Add workbooks to start.")
         self.status_label.setWordWrap(True)
+        self.status_label.setTextFormat(Qt.RichText)  # always: values from the data are escaped
         rlay.addWidget(self.status_label)
         self.tabs = QTabWidget()
         from .gui_charts import ChartPanel  # matplotlib loads with the window, not on import of this module
@@ -1028,7 +1117,8 @@ class MainWindow(QMainWindow):
 
     # --- helpers -------------------------------------------------------------
     def error(self, msg: str):
-        QMessageBox.critical(self, APP, str(msg))
+        # Always rich text, escaped: messages quote conditions such as `<> '0'` and values from the data.
+        QMessageBox.critical(self, APP, "<p>" + _esc(msg).replace("\n", "<br>") + "</p>")
 
     def aliases(self) -> list[str]:
         return [e.source.alias for e in self.entries]
@@ -1110,7 +1200,7 @@ class MainWindow(QMainWindow):
 
     def add_condition_from_result(self, cond: Condition):
         self.conditions.add_condition(cond)
-        self.status_label.setText(f"Added condition: {cond.describe()}. Run the query to apply it.")
+        self.status_label.setText(f"Added condition: {_esc(cond.describe())}. Run the query to apply it.")
 
     def _result_menu(self, view: QTableView, pos):
         index = view.indexAt(pos)
@@ -1334,7 +1424,7 @@ class MainWindow(QMainWindow):
         for name, df in result.tables.items():
             view = QTableView()
             proxy = SortProxy(view)
-            proxy.setSourceModel(FrameModel(df, view))
+            proxy.setSourceModel(FrameModel(df, view, result.colors.get(name)))
             view.setModel(proxy)
             view.setSortingEnabled(True)
             view.sortByColumn(-1, Qt.AscendingOrder)
@@ -1345,10 +1435,11 @@ class MainWindow(QMainWindow):
             view.customContextMenuRequested.connect(lambda pos, v=view: self._result_menu(v, pos))
             self.tabs.addTab(view, f"{name} ({len(df)})")
         self.charts.set_result(result)
-        counts = ", ".join(f"{n}: {len(df)} row{'s' if len(df) != 1 else ''}" for n, df in result.tables.items())
+        counts = ", ".join(f"{_esc(n)}: {len(df)} row{'s' if len(df) != 1 else ''}"
+                           for n, df in result.tables.items())
         text = f"<b>Matched</b> — {counts}"
         if result.warnings:
-            text += "".join(f"<br>⚠ {w}" for w in result.warnings)
+            text += "".join(f"<br>⚠ {_esc(w)}" for w in result.warnings)
         self.status_label.setText(text)
         self._update_buttons()
         return True

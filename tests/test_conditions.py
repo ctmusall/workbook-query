@@ -133,6 +133,7 @@ def test_not_equal_matches_text_that_isnt_a_number():
     s = pd.Series([0, "0", "1 Micrococcus luteus", None, "", 3, "n/a"])
     assert Condition("*", "x", "<>", "0").matches(s).tolist() == [False, False, True, False, False, True, True]
     assert Condition("*", "x", "=", "0").matches(s).tolist() == [True, True, False, False, False, False, False]
-    assert Condition("*", "x", ">", "0").matches(s).tolist() == [False, False, False, False, False, True, False]
+    # "1 Micrococcus luteus" reads as 1, so it is ordered like a number
+    assert Condition("*", "x", ">", "0").matches(s).tolist() == [False, False, True, False, False, True, False]
     d = pd.Series(["2024-01-05", "pending", None])
     assert Condition("*", "x", "<>", "2024-01-05").matches(d).tolist() == [False, True, False]

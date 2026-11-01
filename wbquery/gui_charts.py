@@ -9,13 +9,13 @@ import matplotlib
 matplotlib.use("QtAgg")
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT  # noqa: E402
 from matplotlib.figure import Figure  # noqa: E402
-from PySide6.QtCore import QTimer  # noqa: E402
+from PySide6.QtCore import Qt, QTimer  # noqa: E402
 from PySide6.QtWidgets import (  # noqa: E402
-    QCheckBox, QComboBox, QFileDialog, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton,
+    QCheckBox, QComboBox, QDialog, QFileDialog, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton,
     QSpinBox, QVBoxLayout, QWidget,
 )
 
-from .charts import AGGREGATES, KINDS, ChartError, ChartSpec, draw, is_date, numeric_columns  # noqa: E402
+from .charts import AGGREGATES, KINDS, MULTI_Y, ChartError, ChartSpec, draw, is_date, numeric_columns  # noqa: E402
 from .conditions import sort_columns  # noqa: E402
 from .query import QueryResult, is_provenance  # noqa: E402,F401 - is_provenance re-exported
 
@@ -48,6 +48,18 @@ class ChartPanel(QWidget):
         self.bins_spin.setRange(1, 500)
         self.bins_spin.setValue(20)
         self.stacked_check = QCheckBox("Stacked")
+        self.extra_y: list[str] = []  # line / scatter: Y columns after the Y box's
+        self.more_y_btn = QPushButton("More Y…")
+        self.more_y_btn.setToolTip("Plot several Y columns (e.g. every Chest, Sleeve and Hand column)")
+        self.merge_check = QCheckBox("Combine numbered columns")
+        self.merge_check.setChecked(True)
+        self.merge_check.setToolTip("Chest 1, Chest 2 and Chest 1 (2) become one 'Chest' series")
+        self.hits_check = QCheckBox("Only cells that met a condition")
+        self.labels_check = QCheckBox("Label points with their text")
+        self.labels_check.setToolTip("Write the text after each number next to its point "
+                                     "(1 Micrococcus luteus -> 'Micrococcus luteus'), up to 60 labels")
+        self.hits_check.setToolTip("Plot only the cells a condition counted for (the ones highlighted in "
+                                   "the results), e.g. just the non-zero readings")
         self.title_edit = QLineEdit()
         self.title_edit.setPlaceholderText("optional")
         self.save_btn = QPushButton("Save chart…")
@@ -59,6 +71,8 @@ class ChartPanel(QWidget):
             (QLabel("Table"), self.table_box), (QLabel("Chart"), self.kind_box), (QLabel("Title"), self.title_edit),
             (self.x_label, self.x_box), (self.y_label, self.y_box), (self.group_label, self.group_box),
             (self.agg_label, self.agg_box), (self.bins_label, self.bins_spin), (None, self.stacked_check),
+            (None, self.more_y_btn), (None, self.merge_check), (None, self.hits_check),
+            (None, self.labels_check),
         ]
         for i, (lab, w) in enumerate(cells):
             r, c = divmod(i, 3)
@@ -90,6 +104,10 @@ class ChartPanel(QWidget):
             box.currentTextChanged.connect(self.schedule)
         self.bins_spin.valueChanged.connect(self.schedule)
         self.stacked_check.toggled.connect(self.schedule)
+        self.merge_check.toggled.connect(self.schedule)
+        self.hits_check.toggled.connect(self.schedule)
+        self.labels_check.toggled.connect(self.schedule)
+        self.more_y_btn.clicked.connect(lambda: self.pick_y())
         self.title_edit.textChanged.connect(self.schedule)
         self.save_btn.clicked.connect(lambda: self.save())
         self._kind_changed()
@@ -122,6 +140,10 @@ class ChartPanel(QWidget):
             bins=self.bins_spin.value(),
             stacked=self.stacked_check.isChecked(),
             title=self.title_edit.text().strip(),
+            ys=list(self.extra_y) if self.kind() in MULTI_Y else [],
+            merge_numbered=self.merge_check.isChecked(),
+            only_hits=self.hits_check.isChecked() and self.hits_check.isEnabled(),
+            point_labels=self.labels_check.isChecked(),
         )
 
     def set_spec(self, spec: ChartSpec):
@@ -133,6 +155,10 @@ class ChartPanel(QWidget):
         self.bins_spin.setValue(spec.bins)
         self.stacked_check.setChecked(spec.stacked)
         self.title_edit.setText(spec.title)
+        self.set_extra_y(spec.ys)
+        self.merge_check.setChecked(spec.merge_numbered)
+        self.hits_check.setChecked(spec.only_hits)
+        self.labels_check.setChecked(spec.point_labels)
         self._loading = False
         self.redraw()
 
@@ -148,6 +174,7 @@ class ChartPanel(QWidget):
                 self.table_box.setCurrentText(keep)
         self._loading = False
         self._table_changed()
+        self.hits_check.setEnabled(bool(result and result.query.where.conditions(active=True)))
         has = bool(result and result.tables)
         for w in (self.save_btn, self.toolbar):
             w.setEnabled(has)
@@ -183,8 +210,38 @@ class ChartPanel(QWidget):
         self._fill(self.y_box, nums + others + extra, info.y == "optional", nums[0] if nums else "")
         self._fill(self.x_box, cols + extra, True, (dates or categories or [""])[0])
         self._fill(self.group_box, categories + dates + nums + extra, True, "")
+        self.set_extra_y([c for c in self.extra_y if c in cols + extra])
         self._fill_required()
         self.schedule()
+
+    def set_extra_y(self, columns: list[str]):
+        y = self._value(self.y_box)
+        self.extra_y = [c for c in dict.fromkeys(columns) if c and c != y]
+        n = len(self.extra_y)
+        self.more_y_btn.setText(f"More Y… (+{n})" if n else "More Y…")
+        self.more_y_btn.setToolTip("Also plotting: " + ", ".join(self.extra_y) if n else
+                                   "Plot several Y columns (e.g. every Chest, Sleeve and Hand column)")
+        self.schedule()
+
+    def pick_y(self, columns: list[str] | None = None) -> bool:
+        """Choose every Y column at once (``columns`` skips the dialog): the first goes in the Y box."""
+        if columns is None:
+            from .gui import ColumnPicker  # the app window module imports this one
+
+            current = set(self.spec().y_columns())
+            rows = [(c, [], Qt.Checked if c in current else Qt.Unchecked) for c in self._kinds["numeric"]]
+            dlg = ColumnPicker("Y columns", "Tick the columns to plot. With 'Combine numbered columns', "
+                               "Chest 1, Chest 2, Chest 1 (2)… make one 'Chest' line.", rows, self, show_sheets=False)
+            if dlg.exec() != QDialog.Accepted:
+                return False
+            columns = dlg.checked()
+        if not columns:
+            return False
+        self._loading = True
+        self.y_box.setCurrentText(columns[0])
+        self._loading = False
+        self.set_extra_y(columns[1:])
+        return True
 
     def _fill_required(self):
         """Pick a column for an X or Group the chart type needs but that is still '(none)'."""
@@ -208,7 +265,11 @@ class ChartPanel(QWidget):
         for lab, w, on in ((self.x_label, self.x_box, info.x != "none"),
                            (self.group_label, self.group_box, info.group != "none"),
                            (self.agg_label, self.agg_box, info.agg), (self.bins_label, self.bins_spin, info.bins),
-                           (None, self.stacked_check, info.stacked)):
+                           (None, self.stacked_check, info.stacked),
+                           (None, self.more_y_btn, self.kind() in MULTI_Y),
+                           (None, self.merge_check, self.kind() in MULTI_Y),
+                           (None, self.hits_check, self.kind() in MULTI_Y),
+                           (None, self.labels_check, self.kind() in MULTI_Y)):
             w.setVisible(on)
             if lab is not None:
                 lab.setVisible(on)
@@ -236,7 +297,8 @@ class ChartPanel(QWidget):
             self.message.setText("Run a query to chart its results.")
             return False
         try:
-            notes = draw(self.figure, df, self.spec())
+            hits = self.result.hits.get(self.table_box.currentText()) if self.result else None
+            notes = draw(self.figure, df, self.spec(), hits)
         except ChartError as exc:
             self.canvas.draw_idle()
             self.message.setText(f"<span style='color:#b05000'>⚠ {exc}</span>")

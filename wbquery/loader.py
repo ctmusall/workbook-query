@@ -127,20 +127,51 @@ def load_table(path: str | Path, sheet: str | None = None) -> pd.DataFrame:
     return raw.infer_objects()
 
 
+_LEADING_NUMBER = re.compile(r"^\s*([+-]?\d[\d,]*(?:\.\d+)?%?)\s+\S")
+
+
+def leading_number(text: str) -> tuple[float, str] | None:
+    """The count at the start of a cell such as ``1 Micrococcus luteus`` (-> ``(1.0, "Micrococcus luteus")``):
+    a number followed by whitespace and then any text. None when the text doesn't start that way, so
+    ``TNTC``, ``<1``, ``2026-01-05`` and ``5/2`` aren't read as numbers."""
+    m = _LEADING_NUMBER.match(text)
+    if not m:
+        return None
+    num = m.group(1).replace(",", "")
+    try:
+        value = float(num[:-1]) / 100.0 if num.endswith("%") else float(num)
+    except ValueError:
+        return None
+    return value, text[m.end(1):].strip()
+
+
+def cell_number(v) -> float:
+    """One cell as a float: numbers as they are, text such as ``1,000``, ``5e7``, ``50%`` or
+    ``1 Micrococcus luteus`` (-> 1) parsed; anything else NaN."""
+    if not isinstance(v, str):
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return float("nan")
+    s = v.strip().replace(",", "")
+    if not s:
+        return float("nan")
+    try:
+        return float(s[:-1]) / 100.0 if s.endswith("%") else float(s)
+    except ValueError:
+        pass
+    lead = leading_number(v)
+    return float("nan") if lead is None else lead[0]
+
+
 def to_numeric(series: pd.Series) -> pd.Series:
-    """Coerce to float; strings like '50%' become 0.5, junk becomes NaN."""
+    """Coerce to float with :func:`cell_number`: '50%' becomes 0.5, '1 Micrococcus luteus' 1, junk NaN."""
     if pd.api.types.is_numeric_dtype(series):
         return series.astype(float)
 
     def conv(v):
         if isinstance(v, str):
-            s = v.strip().replace(",", "")
-            if s.endswith("%"):
-                try:
-                    return float(s[:-1]) / 100.0
-                except ValueError:
-                    return float("nan")
-            return s
+            return cell_number(v)
         return v
 
     return pd.to_numeric(series.map(conv), errors="coerce").astype(float)

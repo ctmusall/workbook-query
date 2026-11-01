@@ -59,6 +59,7 @@ Fully blank rows are skipped. Each row keeps its **Excel row number** so you can
    - Untick *On* to switch a condition, or a whole group, off without deleting it. Everything inside a switched-off group is greyed out and left out of the query.
    - Give a group a name in its *Name / Column* box. The name shows in the *Where:* line and in exported reports as `[name] (…)`.
    - Collapse a group with its arrow to tidy the tree. While it's collapsed, its row shows one *Operator* and *Value* for every condition inside, when they all share the same ones. Editing those changes all of them at once. If they differ, the row says so; expand the group to edit them one by one. Collapsed groups stay collapsed when you save and reload a query.
+   - **Highlight color:** click a condition's *Color* swatch to pick a color; right-click it for *No color*. After a run, the cells that condition counted for are filled with its color in the result tables and in both exports. A cell counts only when its condition is true *and* every group above it is true for that row. So in `(Person 1 = KSG AND Chest 1 <> 0) OR (Person 2 = KSG AND …)`, Chest 1 is colored only on rows where Person 1 is KSG. Conditions inside a *NOT* group never color cells. When several colored conditions count for a cell, the first one in the tree wins. A group's swatch colors every condition inside it. *Add for column…* can give all its conditions one color.
    - The *Where:* line shows the whole query in words.
    - Column pick lists are alphabetical, with numbers in order (`P2` before `P10`). Each sheet's output list keeps the output order instead.
 4. **Output columns:** tick the columns you want from each sheet, and drag to reorder them. **Choose for all sheets…** lists every column once. Ticking or unticking one applies to every sheet that has it. A half-ticked column is ticked in some sheets only, and is left as it is unless you change it.
@@ -69,8 +70,8 @@ Fully blank rows are skipped. Each row keeps its **Excel row number** so you can
 
 | Chart | Uses |
 |---|---|
-| Line / run chart | Y over X (dates, numbers or text; blank X = row order), one line per *Group by* value |
-| Scatter | Y against X, colored by an optional column |
+| Line / run chart | Y over X (dates, numbers or text; blank X = row order), one line per Y series and *Group by* value |
+| Scatter | Y against X, colored by Y series and an optional column |
 | Bar | One bar per X category: count of rows, or count / sum / mean / median / min / max of Y |
 | Grouped / stacked bar | As Bar, with bars split by *Group by*; tick *Stacked* to stack them |
 | Histogram | Distribution of Y in *Bins* bins, overlaid per optional group |
@@ -79,7 +80,9 @@ Fully blank rows are skipped. Each row keeps its **Excel row number** so you can
 | Heatmap / pivot | X categories across, *Rows* down, each cell the aggregate of Y (or a count) |
 | I-MR control chart | Individuals and moving range of Y with X̄ ± 2.66·MR̄ and MR UCL = 3.267·MR̄ limits; points outside are red. *Order by* sorts by a date or number column |
 
-Y values are read like conditions read them (`1,000`, `5e7` and `50%` are numbers). Values that aren't numbers are skipped, and the note under the chart says how many. Charts show at most 50 categories (pie charts group the rest as *Other*).
+Y values are read like conditions read them (`1,000`, `5e7` and `50%` are numbers, and `1 Micrococcus luteus` is 1). Values that aren't numbers are skipped, and the note under the chart says how many. Tick **Label points with their text** to write the text after each number next to its point, such as *Micrococcus luteus* (up to 60 labels).
+
+Line and scatter charts can plot several Y columns: click **More Y…** and tick them (search `chest`, `sleeve`, `hand`). With **Combine numbered columns**, columns that differ only by a number make one series: `Chest 1`, `Chest 2` and `Chest 1 (2)` all go on the *Chest* line. **Only cells that met a condition** plots just the cells the query counted for (the highlighted ones, whether or not they have a color). For example, `<> 0` conditions give only the non-zero readings. To plot over time, add a date column such as *Monitor Date* to the output columns and choose it as X. Charts show at most 50 categories (pie charts group the rest as *Other*).
 
 ### Operators
 
@@ -92,7 +95,7 @@ Y values are read like conditions read them (`1,000`, `5e7` and `50%` are number
 | `in` / `not in` | equal one of a comma-separated list (`Pass, Retest`) / none of them |
 | `is blank` / `is not blank` | are empty / have a value |
 
-Excel date serial numbers and `50%`-style text are understood. A cell that can't be compared, such as text in a `>` test, never matches, except with `<>`: a non-blank cell that isn't a number differs from one, so `1 Micrococcus luteus` matches `<> 0`. Blank cells never match `<>`; use *is blank* for those.
+Excel date serial numbers and `50%`-style text are understood. A cell that starts with a number, then a space, then any text reads as that number: `1 Micrococcus luteus` and `3 CFU` match `> 0` and `= 1` / `= 3`. Only the first number counts. `2026-01-05` and `5/2` aren't read this way, because there is no space after the number. The value you type in a condition is never read this way: `= 1 Micrococcus luteus` compares text. A cell that can't be compared, such as `TNTC` in a `>` test, never matches, except with `<>`: a non-blank cell that isn't a number differs from one, so `TNTC` matches `<> 0`. Blank cells never match `<>`; use *is blank* for those.
 
 ### Filter each sheet on its own vs. join
 
@@ -126,7 +129,7 @@ Excel date serial numbers and `50%`-style text are understood. A cell that can't
     {"source": "L", "column": "Status", "op": "=", "value": "Pass"},
     {"logic": "OR", "negate": false, "items": [
       {"source": "R", "column": "Value", "op": ">", "value": "5e7"},
-      {"source": "*", "column": "Notes", "op": "contains", "value": "retest"}
+      {"source": "*", "column": "Notes", "op": "contains", "value": "retest", "color": "#ffd54f"}
     ]}
   ]},
   "outputs": {"L": ["Lot", "Status"], "R": ["Value"]}

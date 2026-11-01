@@ -10,8 +10,13 @@ each joined by AND or OR and optionally negated.
 Comparison semantics are imr-chart's highlight rules: a value that reads as a
 number (``5e7``, ``1,000``, ``50%``) compares numerically, one that reads as a
 date compares as a date, and otherwise ``=`` / ``<>`` compare text ignoring case
-and surrounding spaces. Blank cells never match (except ``is blank``); other cells
-that can't be compared match only ``<>`` / ``not in`` (``1 Micrococcus luteus`` <> 0).
+and surrounding spaces. A cell that starts with a number followed by text reads as
+that number (``1 Micrococcus luteus`` > 0, = 1; see :func:`loader.cell_number`).
+Blank cells never match (except ``is blank``); other cells that can't be compared
+match only ``<>`` / ``not in`` (``TNTC`` <> 0).
+
+A condition may carry a highlight ``color``; :func:`cell_hits` says which cells each
+condition counted for, so results can color them.
 """
 
 from __future__ import annotations
@@ -38,6 +43,26 @@ _COMPARE = {
     ">": lambda a, b: a > b,
     ">=": lambda a, b: a >= b,
 }
+
+
+_HEX = re.compile(r"^#?([0-9a-fA-F]{6})$")
+
+
+def normalize_color(color) -> str:
+    """``"#rrggbb"`` (lower case) for a hex color, ``""`` for none; ValueError for anything else."""
+    text = "" if color is None else str(color).strip()
+    if not text:
+        return ""
+    m = _HEX.match(text)
+    if not m:
+        raise ValueError(f"Highlight color must look like #ff0000, not '{color}'")
+    return "#" + m.group(1).lower()
+
+
+def text_color(background: str) -> str:
+    """Black or white, whichever reads better on ``background`` ("#rrggbb")."""
+    r, g, b = (int(background[i:i + 2], 16) for i in (1, 3, 5))
+    return "#000000" if 0.299 * r + 0.587 * g + 0.114 * b > 150 else "#ffffff"
 
 
 def parse_number(text: str | float | None) -> float | None:
@@ -98,9 +123,11 @@ class Condition:
     op: str
     value: str = ""
     enabled: bool = True
+    color: str = ""  # highlight for the cells it counted for, "#rrggbb" or ""
 
     def __post_init__(self):
         self.value = "" if self.value is None else str(self.value)
+        self.color = normalize_color(self.color)
         self.source = str(self.source or ANY_SOURCE).strip()
         if self.op not in OPERATORS:
             raise ValueError(f"Condition '{self.column}': unknown operator '{self.op}' "
@@ -172,15 +199,18 @@ class Condition:
     @staticmethod
     def _ordered(op, cmp, left: pd.Series, value, blank: pd.Series) -> pd.Series:
         """Compare cells read as numbers / dates. A non-blank cell that doesn't read as one can't be
-        ordered, so only ``<>`` matches it: ``1 Micrococcus luteus`` <> 0."""
+        ordered, so only ``<>`` matches it: ``TNTC`` <> 0."""
         hit = (cmp(left, value) & left.notna()).astype(bool)
         if op == "<>":
             hit |= left.isna() & ~blank
         return hit
 
     def to_dict(self) -> dict:
-        return {"source": self.source, "column": self.column, "op": self.op,
-                "value": self.value, "enabled": self.enabled}
+        doc = {"source": self.source, "column": self.column, "op": self.op,
+               "value": self.value, "enabled": self.enabled}
+        if self.color:
+            doc["color"] = self.color
+        return doc
 
 
 @dataclass
@@ -251,8 +281,8 @@ class Group:
                 items.append(cls.from_dict(item))
             else:
                 try:
-                    items.append(Condition(**{k: item[k] for k in ("source", "column", "op", "value", "enabled")
-                                              if k in item}))
+                    keys = ("source", "column", "op", "value", "enabled", "color")
+                    items.append(Condition(**{k: item[k] for k in keys if k in item}))
                 except TypeError:
                     raise ValueError("Each condition needs a \"column\" and an \"op\"") from None
         return cls(logic=doc.get("logic", "AND"), items=items, negate=bool(doc.get("negate", False)),
@@ -291,3 +321,30 @@ def evaluate(node: Condition | Group, column_for: ColumnResolver) -> pd.Series |
     for r in results[1:]:
         out = (out & r) if node.logic == "AND" else (out | r)
     return ~out if node.negate else out
+
+
+def cell_hits(root: Group, column_for: ColumnResolver) -> list[tuple[Condition, str, pd.Series]]:
+    """Which cells each condition counted for: ``(condition, column name, rows)`` for every active
+    condition and each column it tests. A cell counts when its condition is true there and every group
+    above it is true for that row, so in ``(Person 1 = KSG AND Chest 1 <> 0) OR (Person 2 = KSG AND ...)``
+    Chest 1 counts only on rows where Person 1 is KSG. Conditions inside a negated group never count
+    (a NOT group is true where its parts are false). Column names are the ``name`` of each Series
+    ``column_for`` returns."""
+    out: list[tuple[Condition, str, pd.Series]] = []
+
+    def walk(group: Group, ok: pd.Series | None):
+        if not group.enabled:
+            return
+        here = evaluate(group, column_for)
+        if here is None or group.negate:
+            return
+        ok = here if ok is None else ok & here
+        for item in group.items:
+            if isinstance(item, Group):
+                walk(item, ok)
+            elif item.enabled:
+                for s in column_for(item):
+                    out.append((item, str(s.name), item.matches(s).fillna(False).astype(bool) & ok))
+
+    walk(root, None)
+    return out
