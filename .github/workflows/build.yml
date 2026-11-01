@@ -57,7 +57,7 @@ jobs:
           # The app runs the command line when given options.
           target/release/wbquery -q tests/golden/smoke/query.json -o smoke_out/app --formats html | grep -q "Joined: 1 row(s)"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wbquery-${{ runner.os }}
           path: |
