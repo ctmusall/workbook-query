@@ -97,7 +97,7 @@ fn independent_run_export_and_save() {
     let xlsx = s.export("xlsx", &dir.path().join("out")).unwrap();
     assert!(xlsx.ends_with("out.xlsx") && xlsx.exists());
     assert!(s.status.text.starts_with("Excel workbook saved to ") && s.status.saved.is_some());
-    assert_eq!(s.save_dir(), dir.path().canonicalize().unwrap_or(dir.path().to_path_buf()));
+    assert_eq!(std::fs::canonicalize(s.save_dir()).unwrap(), std::fs::canonicalize(dir.path()).unwrap());
     let html = s.export("html", &dir.path().join("out")).unwrap();
     assert!(html.ends_with("out.html"));
     // A failing export says so.
