@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 from pathlib import Path
 
 import matplotlib
@@ -117,6 +118,8 @@ class ChartPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.result: QueryResult | None = None
+        self.default_dir = lambda: str(Path.home())  # where the save dialog starts (the window sets this)
+        self.saved = lambda path: None  # told about each chart saved
         self._loading = False
         self._kinds: dict[str, list[str]] = {"numeric": [], "date": [], "category": [], "extra": []}
         self._redraw_timer = QTimer(self)
@@ -185,6 +188,8 @@ class ChartPanel(QWidget):
         bar.addWidget(self.save_btn)
         self.message = QLabel()
         self.message.setWordWrap(True)
+        self.message.setTextFormat(Qt.RichText)
+        self.message.setOpenExternalLinks(True)
 
         lay = QVBoxLayout(self)
         lay.addLayout(grid)
@@ -415,10 +420,10 @@ class ChartPanel(QWidget):
             notes = draw(self.figure, df, self.spec(), hits)
         except ChartError as exc:
             self.canvas.draw_idle()
-            self.message.setText(f"<span style='color:#b05000'>⚠ {exc}</span>")
+            self.message.setText(f"<span style='color:#b05000'>⚠ {html.escape(str(exc))}</span>")
             return False
         self.canvas.draw_idle()
-        self.message.setText(" · ".join(notes))
+        self.message.setText(html.escape(" · ".join(notes)))
         return True
 
     def hover_text(self, x: float, y: float, radius: float = 8.0) -> str:
@@ -451,9 +456,13 @@ class ChartPanel(QWidget):
         if self.frame() is None:
             return None
         if path is None:
-            path, _ = QFileDialog.getSaveFileName(self, "Save chart", "chart.png", IMAGE_FILTER)
+            path, chosen = QFileDialog.getSaveFileName(self, "Save chart", str(Path(self.default_dir()) / "chart.png"),
+                                                       IMAGE_FILTER)
             if not path:
                 return None
+            if Path(path).suffix.lower() not in (".png", ".svg", ".pdf"):  # typed without one: use the filter's
+                path = str(Path(path).with_suffix("." + ("svg" if "svg" in chosen else "pdf" if "pdf" in chosen
+                                                         else "png")))
         path = Path(path)
         if path.suffix.lower() not in (".png", ".svg", ".pdf"):
             path = path.with_suffix(".png")
@@ -461,7 +470,10 @@ class ChartPanel(QWidget):
             return None
         try:
             self.figure.savefig(path, dpi=150, bbox_inches="tight")
-        except (OSError, ValueError) as exc:
-            QMessageBox.critical(self, "Save chart", f"Couldn't write {path}:\n{exc}")
+        except Exception as exc:  # noqa: BLE001 - a windowed app has no console: always say what went wrong
+            QMessageBox.critical(self, "Save chart", f"Couldn't write {path}:\n{type(exc).__name__}: {exc}")
             return None
+        self.saved(path)
+        full = path.resolve()
+        self.message.setText(f"Chart saved to <a href=\"{full.parent.as_uri()}\">{html.escape(str(full))}</a>")
         return path

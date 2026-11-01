@@ -1011,6 +1011,7 @@ class MainWindow(QMainWindow):
         self.result: QueryResult | None = None
         self._updating = False
         self._values_cache: dict[tuple[str, str], list[str]] = {}
+        self.last_dir = ""
 
         # --- left: sources, mode, conditions, outputs ---
         left = QWidget()
@@ -1105,11 +1106,14 @@ class MainWindow(QMainWindow):
         self.status_label = QLabel("Add workbooks to start.")
         self.status_label.setWordWrap(True)
         self.status_label.setTextFormat(Qt.RichText)  # always: values from the data are escaped
+        self.status_label.setOpenExternalLinks(True)  # "Saved to …" links open the folder
         rlay.addWidget(self.status_label)
         self.tabs = QTabWidget()
         from .gui_charts import ChartPanel  # matplotlib loads with the window, not on import of this module
 
         self.charts = ChartPanel()
+        self.charts.default_dir = self.save_dir
+        self.charts.saved = self._remember_dir
         self.view_tabs = QTabWidget()
         self.view_tabs.addTab(self.tabs, "Tables")
         self.view_tabs.addTab(self.charts, "Visualize")
@@ -1136,6 +1140,25 @@ class MainWindow(QMainWindow):
     def error(self, msg: str):
         # Always rich text, escaped: messages quote conditions such as `<> '0'` and values from the data.
         QMessageBox.critical(self, APP, "<p>" + _esc(msg).replace("\n", "<br>") + "</p>")
+
+    def save_dir(self) -> str:
+        """Where file dialogs start: the last folder saved to or opened from, else the first workbook's
+        folder, else the home folder (never the app's own working directory)."""
+        if self.last_dir and Path(self.last_dir).is_dir():
+            return self.last_dir
+        for e in self.entries:
+            if Path(e.source.path).parent.is_dir():
+                return str(Path(e.source.path).parent)
+        return str(Path.home())
+
+    def _remember_dir(self, path) -> None:
+        self.last_dir = str(Path(path).resolve().parent)
+
+    def _saved(self, what: str, path: Path) -> None:
+        """Say where a file went, with a link that opens its folder."""
+        self._remember_dir(path)
+        path = Path(path).resolve()
+        self.status_label.setText(f"{what} saved to <a href=\"{path.parent.as_uri()}\">{_esc(path)}</a>")
 
     def aliases(self) -> list[str]:
         return [e.source.alias for e in self.entries]
@@ -1250,7 +1273,7 @@ class MainWindow(QMainWindow):
 
     # --- sources ----------------------------------------------------------------
     def browse_workbooks(self) -> int:
-        paths, _ = QFileDialog.getOpenFileNames(self, "Add workbooks", "", WORKBOOK_FILTER)
+        paths, _ = QFileDialog.getOpenFileNames(self, "Add workbooks", self.save_dir(), WORKBOOK_FILTER)
         return sum(self.add_workbook(p) for p in paths)
 
     def add_workbook(self, path: str | Path, sheets: list[str] | None = None) -> int:
@@ -1409,20 +1432,24 @@ class MainWindow(QMainWindow):
     def save_query(self, path: str | None = None) -> Path | None:
         if path is None:
             stem = re.sub(r"[^\w\- ]+", "", self.name_edit.text()).strip().replace(" ", "_") or "query"
-            path, _ = QFileDialog.getSaveFileName(self, "Save query", f"{stem}.json", "Query (*.json)")
+            path, _ = QFileDialog.getSaveFileName(self, "Save query", str(Path(self.save_dir()) / f"{stem}.json"),
+                                                  "Query (*.json)")
             if not path:
                 return None
         try:
-            return save_query(self.build_query(), path)
-        except (OSError, ValueError) as exc:
-            self.error(exc)
+            saved = save_query(self.build_query(), path)
+        except Exception as exc:  # noqa: BLE001 - a windowed app has no console: always say what went wrong
+            self.error(f"Couldn't save the query to {path}:\n{exc}")
             return None
+        self._saved("Query", saved)
+        return saved
 
     def load_query(self, path: str | None = None) -> bool:
         if path is None:
-            path, _ = QFileDialog.getOpenFileName(self, "Load query", "", "Query (*.json)")
+            path, _ = QFileDialog.getOpenFileName(self, "Load query", self.save_dir(), "Query (*.json)")
             if not path:
                 return False
+            self._remember_dir(path)
         try:
             query = load_query(path)
         except ValueError as exc:
@@ -1478,20 +1505,29 @@ class MainWindow(QMainWindow):
             return None
         if path is None:
             filt = "Excel workbook (*.xlsx)" if fmt == "xlsx" else "HTML report (*.html)"
-            path, _ = QFileDialog.getSaveFileName(self, "Export results", f"query_results.{fmt}", filt)
+            stem = re.sub(r"[^\w\- ]+", "", self.name_edit.text()).strip().replace(" ", "_") or "query_results"
+            path, _ = QFileDialog.getSaveFileName(self, "Export results", str(Path(self.save_dir()) / f"{stem}.{fmt}"),
+                                                  filt)
             if not path:
                 return None
         try:
             if fmt == "xlsx":
                 from .export_xlsx import write_xlsx
 
-                return write_xlsx(self.result, path)
-            from .export_html import write_html
+                saved = write_xlsx(self.result, path)
+            else:
+                from .export_html import write_html
 
-            return write_html(self.result, path)
-        except OSError as exc:
-            self.error(f"Couldn't write {path}:\n{exc}")
+                saved = write_html(self.result, path)
+        except PermissionError as exc:
+            self.error(f"Couldn't write {path}:\n{exc}\n\nIf the file is open in Excel or a browser, close it and "
+                       "try again.")
             return None
+        except Exception as exc:  # noqa: BLE001 - a windowed app has no console: always say what went wrong
+            self.error(f"Couldn't export to {path}:\n{type(exc).__name__}: {exc}")
+            return None
+        self._saved("Excel workbook" if fmt == "xlsx" else "HTML report", saved)
+        return saved
 
     # --- drag and drop ------------------------------------------------------------
     def dragEnterEvent(self, event):
@@ -1512,6 +1548,16 @@ def main(argv: list[str] | None = None) -> int:
     if ICON.exists():
         app.setWindowIcon(QIcon(str(ICON)))
     win = MainWindow()
+
+    def report(kind, exc, tb):
+        """Show errors no handler caught: the windowed build has no console to print them to."""
+        import traceback
+
+        sys.__excepthook__(kind, exc, tb)
+        detail = "".join(traceback.format_exception(kind, exc, tb)[-3:])
+        win.error(f"Something went wrong: {kind.__name__}: {exc}\n\n{detail}")
+
+    sys.excepthook = report
     win.show()
     for path in argv:
         if path.lower().endswith(".json"):

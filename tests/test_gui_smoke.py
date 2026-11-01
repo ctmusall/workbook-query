@@ -63,7 +63,22 @@ def test_independent_query_and_export(win, lots_xlsx, results_xlsx, tmp_path):
     for fmt in ("xlsx", "html"):
         out = win.export(fmt, str(tmp_path / f"res.{fmt}"))
         assert out is not None and out.stat().st_size > 0
+        assert "saved to" in win.status_label.text() and str(out.resolve()) in win.status_label.text()
     assert win.errors == []
+    assert win.save_dir() == str(tmp_path.resolve())  # dialogs start where the last file went
+
+    # Any failure while writing is reported, never silently dropped.
+    import wbquery.export_html as export_html
+
+    def broken(*_a, **_k):
+        raise RuntimeError("disk on fire")
+
+    orig, export_html.write_html = export_html.write_html, broken
+    try:
+        assert win.export("html", str(tmp_path / "bad.html")) is None
+    finally:
+        export_html.write_html = orig
+    assert "RuntimeError: disk on fire" in win.errors[-1]
 
 
 def test_join_query_save_and_reload(win, lots_xlsx, results_xlsx, tmp_path):
@@ -146,9 +161,10 @@ def test_visualize(win, lots_xlsx, results_xlsx, tmp_path):
     charts.y_box.setCurrentText("File")  # not numeric
     assert not charts.redraw() and charts.has_error()
     charts.y_box.setCurrentText("Value")
-    for ext in ("png", "svg"):
+    for ext in ("png", "svg", "pdf"):
         out = charts.save(str(tmp_path / f"chart.{ext}"))
         assert out is not None and out.stat().st_size > 0
+        assert "Chart saved to" in charts.message.text()
     assert charts.save(str(tmp_path / "chart")).suffix == ".png"
 
     win.view_tabs.setCurrentIndex(0)

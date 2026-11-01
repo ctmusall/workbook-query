@@ -17,7 +17,9 @@ def make_analysis(script, gui):
         [script],
         pathex=["."],
         datas=[("wbquery/assets/icon.png", "wbquery/assets")] if gui else [],
-        hiddenimports=["openpyxl"] + (["matplotlib.backends.backend_agg", "matplotlib.backends.backend_qtagg"]
+        # Saving a chart as SVG / PDF loads these backends only then, so PyInstaller can't see them.
+        hiddenimports=["openpyxl"] + (["matplotlib.backends.backend_agg", "matplotlib.backends.backend_qtagg",
+                                       "matplotlib.backends.backend_svg", "matplotlib.backends.backend_pdf"]
                                       if gui else []),
         # The console build never imports Qt or matplotlib (charts are GUI-only); leaving them out saves ~130 MB.
         excludes=excludes if gui else excludes + ["PySide6", "shiboken6", "matplotlib"],

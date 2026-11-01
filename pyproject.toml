@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "workbook-query"
-version = "0.4.0"
+version = "0.5.0"
 description = "Query rows across many Excel workbooks and sheets with AND/OR conditions and export the matches"
 readme = "README.md"
 requires-python = ">=3.10"
