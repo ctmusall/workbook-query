@@ -1,0 +1,34 @@
+[package]
+name = "wbquery-gui"
+description = "Workbook Query desktop app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[[bin]]
+name = "wbquery"
+path = "src/main.rs"
+
+[dependencies]
+wbquery-core.workspace = true
+wbquery-charts.workspace = true
+wbquery-cli.workspace = true
+chrono.workspace = true
+eframe.workspace = true
+egui.workspace = true
+egui_extras.workspace = true
+egui_plot.workspace = true
+epaint_default_fonts = { workspace = true, features = ["monochrome_emoji_fonts"] }
+image.workspace = true
+rfd.workspace = true
+
+[dev-dependencies]
+egui_kittest.workspace = true
+tempfile.workspace = true
+
+[build-dependencies]
+winresource.workspace = true
+
+[lints]
+workspace = true

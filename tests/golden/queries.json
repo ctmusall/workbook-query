@@ -1,0 +1,7852 @@
+[
+ {
+  "name": "independent_or",
+  "query": {
+   "version": 1,
+   "name": "Independent Or",
+   "description": "Golden case independent_or",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "OR",
+    "negate": false,
+    "items": [
+     {
+      "source": "L",
+      "column": "Status",
+      "op": "=",
+      "value": "pass",
+      "enabled": true
+     },
+     {
+      "source": "R",
+      "column": "Value",
+      "op": ">=",
+      "value": "6e7",
+      "enabled": true
+     }
+    ]
+   },
+   "outputs": {
+    "L": [
+     "Lot",
+     "Status"
+    ],
+    "R": [
+     "Lot ID",
+     "Value"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "All results",
+    "columns": [
+     "Source",
+     "File",
+     "Sheet",
+     "Excel row",
+     "Lot",
+     "Status",
+     "Lot ID",
+     "Value"
+    ],
+    "cells": {
+     "Source": [
+      "L",
+      "L",
+      "L",
+      "R",
+      "R"
+     ],
+     "File": [
+      "lots.xlsx",
+      "lots.xlsx",
+      "lots.xlsx",
+      "results.xlsx",
+      "results.xlsx"
+     ],
+     "Sheet": [
+      "Lots",
+      "Lots",
+      "Lots",
+      "Results",
+      "Results"
+     ],
+     "Excel row": [
+      2,
+      4,
+      5,
+      3,
+      4
+     ],
+     "Lot": [
+      "A1",
+      "A3",
+      101,
+      null,
+      null
+     ],
+     "Status": [
+      "Pass",
+      "pass",
+      "Pass",
+      null,
+      null
+     ],
+     "Lot ID": [
+      null,
+      null,
+      null,
+      "A2",
+      "A2"
+     ],
+     "Value": [
+      null,
+      null,
+      null,
+      70000000.0,
+      60000000.0
+     ]
+    }
+   },
+   {
+    "name": "L",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Lot",
+     "Status"
+    ],
+    "cells": {
+     "File": [
+      "lots.xlsx",
+      "lots.xlsx",
+      "lots.xlsx"
+     ],
+     "Sheet": [
+      "Lots",
+      "Lots",
+      "Lots"
+     ],
+     "Excel row": [
+      2,
+      4,
+      5
+     ],
+     "Lot": [
+      "A1",
+      "A3",
+      101
+     ],
+     "Status": [
+      "Pass",
+      "pass",
+      "Pass"
+     ]
+    }
+   },
+   {
+    "name": "R",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Lot ID",
+     "Value"
+    ],
+    "cells": {
+     "File": [
+      "results.xlsx",
+      "results.xlsx"
+     ],
+     "Sheet": [
+      "Results",
+      "Results"
+     ],
+     "Excel row": [
+      3,
+      4
+     ],
+     "Lot ID": [
+      "A2",
+      "A2"
+     ],
+     "Value": [
+      70000000,
+      60000000
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "All results": {
+    "Source": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "File": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Sheet": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Excel row": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Lot": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Status": [
+     true,
+     true,
+     true,
+     false,
+     false
+    ],
+    "Lot ID": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Value": [
+     false,
+     false,
+     false,
+     true,
+     true
+    ]
+   },
+   "L": {
+    "File": [
+     false,
+     false,
+     false
+    ],
+    "Sheet": [
+     false,
+     false,
+     false
+    ],
+    "Excel row": [
+     false,
+     false,
+     false
+    ],
+    "Lot": [
+     false,
+     false,
+     false
+    ],
+    "Status": [
+     true,
+     true,
+     true
+    ]
+   },
+   "R": {
+    "File": [
+     false,
+     false
+    ],
+    "Sheet": [
+     false,
+     false
+    ],
+    "Excel row": [
+     false,
+     false
+    ],
+    "Lot ID": [
+     false,
+     false
+    ],
+    "Value": [
+     true,
+     true
+    ]
+   }
+  },
+  "colors": {
+   "All results": {
+    "Source": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "File": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Sheet": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Excel row": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Lot": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Status": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Lot ID": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Value": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ]
+   },
+   "L": {
+    "File": [
+     "",
+     "",
+     ""
+    ],
+    "Sheet": [
+     "",
+     "",
+     ""
+    ],
+    "Excel row": [
+     "",
+     "",
+     ""
+    ],
+    "Lot": [
+     "",
+     "",
+     ""
+    ],
+    "Status": [
+     "",
+     "",
+     ""
+    ]
+   },
+   "R": {
+    "File": [
+     "",
+     ""
+    ],
+    "Sheet": [
+     "",
+     ""
+    ],
+    "Excel row": [
+     "",
+     ""
+    ],
+    "Lot ID": [
+     "",
+     ""
+    ],
+    "Value": [
+     "",
+     ""
+    ]
+   }
+  },
+  "warnings": [],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 3,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 2,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   }
+  ],
+  "xlsx": [
+   {
+    "name": "Query",
+    "rows": [
+     [
+      "Query",
+      "Independent Or",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Description",
+      "Golden case independent_or",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Mode",
+      "Each sheet filtered on its own",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Conditions",
+      "L › Status = 'pass' OR R › Value >= '6e7'",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Run at",
+      "{RUN_AT}",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Rows out: All results",
+      5,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Rows out: L",
+      3,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Rows out: R",
+      2,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Source",
+      "File",
+      "Sheet",
+      "Rows",
+      "Matched",
+      "SHA-256"
+     ],
+     [
+      "L",
+      "{DIR}/data/lots.xlsx",
+      "Lots",
+      5,
+      3,
+      "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+     ],
+     [
+      "R",
+      "{DIR}/data/results.xlsx",
+      "Results",
+      5,
+      2,
+      "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+     ]
+    ],
+    "fills": {
+     "A10": "00DDE6F0",
+     "B10": "00DDE6F0",
+     "C10": "00DDE6F0",
+     "D10": "00DDE6F0",
+     "E10": "00DDE6F0",
+     "F10": "00DDE6F0"
+    },
+    "widths": {
+     "A": 23.0,
+     "B": 73.0,
+     "C": 9.0,
+     "D": 8.0,
+     "E": 9.0,
+     "F": 66.0
+    },
+    "freeze": null,
+    "filter": null
+   },
+   {
+    "name": "All results",
+    "rows": [
+     [
+      "Source",
+      "File",
+      "Sheet",
+      "Excel row",
+      "Lot",
+      "Status",
+      "Lot ID",
+      "Value"
+     ],
+     [
+      "L",
+      "lots.xlsx",
+      "Lots",
+      2,
+      "A1",
+      "Pass",
+      null,
+      null
+     ],
+     [
+      "L",
+      "lots.xlsx",
+      "Lots",
+      4,
+      "A3",
+      "pass",
+      null,
+      null
+     ],
+     [
+      "L",
+      "lots.xlsx",
+      "Lots",
+      5,
+      101,
+      "Pass",
+      null,
+      null
+     ],
+     [
+      "R",
+      "results.xlsx",
+      "Results",
+      3,
+      null,
+      null,
+      "A2",
+      70000000
+     ],
+     [
+      "R",
+      "results.xlsx",
+      "Results",
+      4,
+      null,
+      null,
+      "A2",
+      60000000
+     ]
+    ],
+    "fills": {},
+    "widths": {
+     "A": 8.0,
+     "B": 14.0,
+     "C": 9.0,
+     "D": 11.0,
+     "E": 8.0,
+     "F": 8.0,
+     "G": 8.0,
+     "H": 12.0
+    },
+    "freeze": "A2",
+    "filter": "A1:H6"
+   },
+   {
+    "name": "L",
+    "rows": [
+     [
+      "File",
+      "Sheet",
+      "Excel row",
+      "Lot",
+      "Status"
+     ],
+     [
+      "lots.xlsx",
+      "Lots",
+      2,
+      "A1",
+      "Pass"
+     ],
+     [
+      "lots.xlsx",
+      "Lots",
+      4,
+      "A3",
+      "pass"
+     ],
+     [
+      "lots.xlsx",
+      "Lots",
+      5,
+      101,
+      "Pass"
+     ]
+    ],
+    "fills": {},
+    "widths": {
+     "A": 11.0,
+     "B": 8.0,
+     "C": 11.0,
+     "D": 8.0,
+     "E": 8.0
+    },
+    "freeze": "A2",
+    "filter": "A1:E4"
+   },
+   {
+    "name": "R",
+    "rows": [
+     [
+      "File",
+      "Sheet",
+      "Excel row",
+      "Lot ID",
+      "Value"
+     ],
+     [
+      "results.xlsx",
+      "Results",
+      3,
+      "A2",
+      70000000
+     ],
+     [
+      "results.xlsx",
+      "Results",
+      4,
+      "A2",
+      60000000
+     ]
+    ],
+    "fills": {},
+    "widths": {
+     "A": 14.0,
+     "B": 9.0,
+     "C": 11.0,
+     "D": 8.0,
+     "E": 10.0
+    },
+    "freeze": "A2",
+    "filter": "A1:E3"
+   }
+  ]
+ },
+ {
+  "name": "any_sheet_three",
+  "query": {
+   "version": 1,
+   "name": "Any Sheet Three",
+   "description": "Golden case any_sheet_three",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": false,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": [
+     {
+      "source": "*",
+      "column": "Lot",
+      "op": "=",
+      "value": "A2",
+      "enabled": true
+     },
+     {
+      "source": "R",
+      "column": "Pct",
+      "op": ">",
+      "value": "85%",
+      "enabled": true
+     }
+    ]
+   },
+   "outputs": {
+    "L": [
+     "Notes"
+    ],
+    "O": [
+     "Owner"
+    ],
+    "R": [
+     "Pct"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    },
+    {
+     "alias": "O",
+     "path": "data/lots.xlsx",
+     "sheet": "Owners",
+     "key": "Lot"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "All results",
+    "columns": [
+     "Notes",
+     "Pct",
+     "Owner"
+    ],
+    "cells": {
+     "Notes": [
+      "retest",
+      null,
+      null
+     ],
+     "Pct": [
+      null,
+      "90%",
+      null
+     ],
+     "Owner": [
+      null,
+      null,
+      "Lee"
+     ]
+    }
+   },
+   {
+    "name": "L",
+    "columns": [
+     "Notes"
+    ],
+    "cells": {
+     "Notes": [
+      "retest"
+     ]
+    }
+   },
+   {
+    "name": "R",
+    "columns": [
+     "Pct"
+    ],
+    "cells": {
+     "Pct": [
+      "90%"
+     ]
+    }
+   },
+   {
+    "name": "O",
+    "columns": [
+     "Owner"
+    ],
+    "cells": {
+     "Owner": [
+      "Lee"
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "All results": {
+    "Notes": [
+     false,
+     false,
+     false
+    ],
+    "Pct": [
+     false,
+     true,
+     false
+    ],
+    "Owner": [
+     false,
+     false,
+     false
+    ]
+   },
+   "L": {
+    "Notes": [
+     false
+    ]
+   },
+   "R": {
+    "Pct": [
+     true
+    ]
+   },
+   "O": {
+    "Owner": [
+     false
+    ]
+   }
+  },
+  "colors": {
+   "All results": {
+    "Notes": [
+     "",
+     "",
+     ""
+    ],
+    "Pct": [
+     "",
+     "",
+     ""
+    ],
+    "Owner": [
+     "",
+     "",
+     ""
+    ]
+   },
+   "L": {
+    "Notes": [
+     ""
+    ]
+   },
+   "R": {
+    "Pct": [
+     ""
+    ]
+   },
+   "O": {
+    "Owner": [
+     ""
+    ]
+   }
+  },
+  "warnings": [],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 1,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 1,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   },
+   {
+    "alias": "O",
+    "rows": 2,
+    "matched": 1,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   }
+  ]
+ },
+ {
+  "name": "no_conditions",
+  "query": {
+   "version": 1,
+   "name": "No Conditions",
+   "description": "Golden case no_conditions",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": []
+   },
+   "outputs": {
+    "L": [
+     "Lot"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "L",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Lot"
+    ],
+    "cells": {
+     "File": [
+      "lots.xlsx",
+      "lots.xlsx",
+      "lots.xlsx",
+      "lots.xlsx",
+      "lots.xlsx"
+     ],
+     "Sheet": [
+      "Lots",
+      "Lots",
+      "Lots",
+      "Lots",
+      "Lots"
+     ],
+     "Excel row": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "Lot": [
+      "A1",
+      "A2",
+      "A3",
+      101,
+      null
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "L": {
+    "File": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Sheet": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Excel row": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Lot": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "colors": {
+   "L": {
+    "File": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Sheet": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Excel row": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Lot": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ]
+   }
+  },
+  "warnings": [],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 5,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 5,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   }
+  ]
+ },
+ {
+  "name": "all_no_provenance",
+  "query": {
+   "version": 1,
+   "name": "All No Provenance",
+   "description": "Golden case all_no_provenance",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": false,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": []
+   },
+   "outputs": {
+    "L": [
+     "Lot"
+    ],
+    "R": [
+     "Value"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "All results",
+    "columns": [
+     "Lot",
+     "Value"
+    ],
+    "cells": {
+     "Lot": [
+      "A1",
+      "A2",
+      "A3",
+      101,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "Value": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      50000000.0,
+      70000000.0,
+      60000000.0,
+      10000000.0,
+      30000000.0
+     ]
+    }
+   },
+   {
+    "name": "L",
+    "columns": [
+     "Lot"
+    ],
+    "cells": {
+     "Lot": [
+      "A1",
+      "A2",
+      "A3",
+      101,
+      null
+     ]
+    }
+   },
+   {
+    "name": "R",
+    "columns": [
+     "Value"
+    ],
+    "cells": {
+     "Value": [
+      50000000,
+      70000000,
+      60000000,
+      10000000,
+      30000000
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "All results": {
+    "Lot": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Value": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "L": {
+    "Lot": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "R": {
+    "Value": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "colors": {
+   "All results": {
+    "Lot": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Value": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ]
+   },
+   "L": {
+    "Lot": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ]
+   },
+   "R": {
+    "Value": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ]
+   }
+  },
+  "warnings": [],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 5,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 5,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   }
+  ]
+ },
+ {
+  "name": "case_insensitive",
+  "query": {
+   "version": 1,
+   "name": "Case Insensitive",
+   "description": "Golden case case_insensitive",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": false,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": [
+     {
+      "source": "*",
+      "column": "lot id",
+      "op": "=",
+      "value": "A2",
+      "enabled": true
+     },
+     {
+      "source": "L",
+      "column": " status ",
+      "op": "=",
+      "value": "fail",
+      "enabled": true
+     }
+    ]
+   },
+   "outputs": {
+    "L": [
+     "Lot"
+    ],
+    "R": [
+     "Value"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "All results",
+    "columns": [
+     "Lot",
+     "Value"
+    ],
+    "cells": {
+     "Lot": [
+      "A2",
+      null,
+      null,
+      null
+     ],
+     "Value": [
+      null,
+      null,
+      70000000.0,
+      60000000.0
+     ]
+    }
+   },
+   {
+    "name": "L",
+    "columns": [
+     "Lot"
+    ],
+    "cells": {
+     "Lot": [
+      "A2",
+      null
+     ]
+    }
+   },
+   {
+    "name": "R",
+    "columns": [
+     "Value"
+    ],
+    "cells": {
+     "Value": [
+      70000000,
+      60000000
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "All results": {
+    "Lot": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "Value": [
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "L": {
+    "Lot": [
+     false,
+     false
+    ]
+   },
+   "R": {
+    "Value": [
+     false,
+     false
+    ]
+   }
+  },
+  "colors": {
+   "All results": {
+    "Lot": [
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Value": [
+     "",
+     "",
+     "",
+     ""
+    ]
+   },
+   "L": {
+    "Lot": [
+     "",
+     ""
+    ]
+   },
+   "R": {
+    "Value": [
+     "",
+     ""
+    ]
+   }
+  },
+  "warnings": [],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 2,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 2,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   }
+  ]
+ },
+ {
+  "name": "disabled_group",
+  "query": {
+   "version": 1,
+   "name": "Disabled Group",
+   "description": "Golden case disabled_group",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": [
+     {
+      "logic": "AND",
+      "negate": false,
+      "enabled": false,
+      "items": [
+       {
+        "source": "L",
+        "column": "Status",
+        "op": ">",
+        "value": "abc",
+        "enabled": true
+       },
+       {
+        "source": "*",
+        "column": "Ghost",
+        "op": "=",
+        "value": "1",
+        "enabled": true
+       }
+      ]
+     }
+    ]
+   },
+   "outputs": {
+    "L": [
+     "Lot"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "L",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Lot"
+    ],
+    "cells": {
+     "File": [
+      "lots.xlsx",
+      "lots.xlsx",
+      "lots.xlsx",
+      "lots.xlsx",
+      "lots.xlsx"
+     ],
+     "Sheet": [
+      "Lots",
+      "Lots",
+      "Lots",
+      "Lots",
+      "Lots"
+     ],
+     "Excel row": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "Lot": [
+      "A1",
+      "A2",
+      "A3",
+      101,
+      null
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "L": {
+    "File": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Sheet": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Excel row": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Lot": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "colors": {
+   "L": {
+    "File": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Sheet": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Excel row": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Lot": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ]
+   }
+  },
+  "warnings": [],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 5,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 5,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   }
+  ]
+ },
+ {
+  "name": "untested_warning",
+  "query": {
+   "version": 1,
+   "name": "Untested Warning",
+   "description": "Golden case untested_warning",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": [
+     {
+      "source": "*",
+      "column": "Status",
+      "op": "=",
+      "value": "pass",
+      "enabled": true
+     }
+    ]
+   },
+   "outputs": {
+    "L": [
+     "Lot"
+    ],
+    "O": [
+     "Lot"
+    ],
+    "R": [
+     "Value"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    },
+    {
+     "alias": "O",
+     "path": "data/lots.xlsx",
+     "sheet": "Owners",
+     "key": "Lot"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "All results",
+    "columns": [
+     "Source",
+     "File",
+     "Sheet",
+     "Excel row",
+     "Lot",
+     "Value"
+    ],
+    "cells": {
+     "Source": [
+      "L",
+      "L",
+      "L"
+     ],
+     "File": [
+      "lots.xlsx",
+      "lots.xlsx",
+      "lots.xlsx"
+     ],
+     "Sheet": [
+      "Lots",
+      "Lots",
+      "Lots"
+     ],
+     "Excel row": [
+      2,
+      4,
+      5
+     ],
+     "Lot": [
+      "A1",
+      "A3",
+      101
+     ],
+     "Value": [
+      null,
+      null,
+      null
+     ]
+    }
+   },
+   {
+    "name": "L",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Lot"
+    ],
+    "cells": {
+     "File": [
+      "lots.xlsx",
+      "lots.xlsx",
+      "lots.xlsx"
+     ],
+     "Sheet": [
+      "Lots",
+      "Lots",
+      "Lots"
+     ],
+     "Excel row": [
+      2,
+      4,
+      5
+     ],
+     "Lot": [
+      "A1",
+      "A3",
+      101
+     ]
+    }
+   },
+   {
+    "name": "R",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Value"
+    ],
+    "cells": {
+     "File": [],
+     "Sheet": [],
+     "Excel row": [],
+     "Value": []
+    }
+   },
+   {
+    "name": "O",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Lot"
+    ],
+    "cells": {
+     "File": [],
+     "Sheet": [],
+     "Excel row": [],
+     "Lot": []
+    }
+   }
+  ],
+  "hits": {
+   "All results": {
+    "Source": [
+     false,
+     false,
+     false
+    ],
+    "File": [
+     false,
+     false,
+     false
+    ],
+    "Sheet": [
+     false,
+     false,
+     false
+    ],
+    "Excel row": [
+     false,
+     false,
+     false
+    ],
+    "Lot": [
+     false,
+     false,
+     false
+    ],
+    "Value": [
+     false,
+     false,
+     false
+    ]
+   },
+   "L": {
+    "File": [
+     false,
+     false,
+     false
+    ],
+    "Sheet": [
+     false,
+     false,
+     false
+    ],
+    "Excel row": [
+     false,
+     false,
+     false
+    ],
+    "Lot": [
+     false,
+     false,
+     false
+    ]
+   },
+   "R": {
+    "File": [],
+    "Sheet": [],
+    "Excel row": [],
+    "Value": []
+   },
+   "O": {
+    "File": [],
+    "Sheet": [],
+    "Excel row": [],
+    "Lot": []
+   }
+  },
+  "colors": {
+   "All results": {
+    "Source": [
+     "",
+     "",
+     ""
+    ],
+    "File": [
+     "",
+     "",
+     ""
+    ],
+    "Sheet": [
+     "",
+     "",
+     ""
+    ],
+    "Excel row": [
+     "",
+     "",
+     ""
+    ],
+    "Lot": [
+     "",
+     "",
+     ""
+    ],
+    "Value": [
+     "",
+     "",
+     ""
+    ]
+   },
+   "L": {
+    "File": [
+     "",
+     "",
+     ""
+    ],
+    "Sheet": [
+     "",
+     "",
+     ""
+    ],
+    "Excel row": [
+     "",
+     "",
+     ""
+    ],
+    "Lot": [
+     "",
+     "",
+     ""
+    ]
+   },
+   "R": {
+    "File": [],
+    "Sheet": [],
+    "Excel row": [],
+    "Value": []
+   },
+   "O": {
+    "File": [],
+    "Sheet": [],
+    "Excel row": [],
+    "Lot": []
+   }
+  },
+  "warnings": [
+   "2 sheets lack every column the conditions test, so they match no rows: R, O"
+  ],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 3,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 0,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   },
+   {
+    "alias": "O",
+    "rows": 2,
+    "matched": 0,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   }
+  ]
+ },
+ {
+  "name": "validation",
+  "query": {
+   "version": 1,
+   "name": "Validation",
+   "description": "Golden case validation",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": [
+     {
+      "source": "L",
+      "column": "Nope",
+      "op": "=",
+      "value": "1",
+      "enabled": true
+     },
+     {
+      "source": "Q",
+      "column": "Lot",
+      "op": "=",
+      "value": "1",
+      "enabled": true
+     },
+     {
+      "source": "*",
+      "column": "Ghost",
+      "op": "=",
+      "value": "1",
+      "enabled": true
+     },
+     {
+      "source": "L",
+      "column": "Status",
+      "op": ">",
+      "value": "abc",
+      "enabled": true
+     }
+    ]
+   },
+   "outputs": {
+    "L": [
+     "Missing"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    }
+   ]
+  },
+  "error": "L › Nope = '1': column 'Nope' not found in L\nQ › Lot = '1': no source named 'Q'\nAny sheet › Ghost = '1': no sheet has a column 'Ghost'\nL › Status > 'abc': '>' needs a number or date, not 'abc'\nL: output column(s) not found: Missing"
+ },
+ {
+  "name": "no_outputs",
+  "query": {
+   "version": 1,
+   "name": "No Outputs",
+   "description": "Golden case no_outputs",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": []
+   },
+   "outputs": {},
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    }
+   ]
+  },
+  "error": "Choose at least one output column"
+ },
+ {
+  "name": "bad_mode",
+  "query": {
+   "version": 1,
+   "name": "Bad Mode",
+   "description": "Golden case bad_mode",
+   "mode": "sideways",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": []
+   },
+   "outputs": {
+    "L": [
+     "Lot"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    }
+   ]
+  },
+  "error": "Mode must be one of independent, join, not 'sideways'"
+ },
+ {
+  "name": "dates_made",
+  "query": {
+   "version": 1,
+   "name": "Dates Made",
+   "description": "Golden case dates_made",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": [
+     {
+      "source": "L",
+      "column": "Made",
+      "op": ">=",
+      "value": "2024-03-01",
+      "enabled": true
+     },
+     {
+      "source": "L",
+      "column": "Made",
+      "op": "<",
+      "value": "03/15/2024",
+      "enabled": true
+     }
+    ]
+   },
+   "outputs": {
+    "L": [
+     "Lot",
+     "Made",
+     "Notes"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "L",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Lot",
+     "Made",
+     "Notes"
+    ],
+    "cells": {
+     "File": [
+      "lots.xlsx"
+     ],
+     "Sheet": [
+      "Lots"
+     ],
+     "Excel row": [
+      4
+     ],
+     "Lot": [
+      "A3"
+     ],
+     "Made": [
+      {
+       "d": "2024-03-01T00:00:00"
+      }
+     ],
+     "Notes": [
+      "ok"
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "L": {
+    "File": [
+     false
+    ],
+    "Sheet": [
+     false
+    ],
+    "Excel row": [
+     false
+    ],
+    "Lot": [
+     false
+    ],
+    "Made": [
+     true
+    ],
+    "Notes": [
+     false
+    ]
+   }
+  },
+  "colors": {
+   "L": {
+    "File": [
+     ""
+    ],
+    "Sheet": [
+     ""
+    ],
+    "Excel row": [
+     ""
+    ],
+    "Lot": [
+     ""
+    ],
+    "Made": [
+     ""
+    ],
+    "Notes": [
+     ""
+    ]
+   }
+  },
+  "warnings": [],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 1,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   }
+  ],
+  "xlsx": [
+   {
+    "name": "Query",
+    "rows": [
+     [
+      "Query",
+      "Dates Made",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Description",
+      "Golden case dates_made",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Mode",
+      "Each sheet filtered on its own",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Conditions",
+      "L › Made >= '2024-03-01' AND L › Made < '03/15/2024'",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Run at",
+      "{RUN_AT}",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Rows out: L",
+      1,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Source",
+      "File",
+      "Sheet",
+      "Rows",
+      "Matched",
+      "SHA-256"
+     ],
+     [
+      "L",
+      "{DIR}/data/lots.xlsx",
+      "Lots",
+      5,
+      1,
+      "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+     ]
+    ],
+    "fills": {
+     "A8": "00DDE6F0",
+     "B8": "00DDE6F0",
+     "C8": "00DDE6F0",
+     "D8": "00DDE6F0",
+     "E8": "00DDE6F0",
+     "F8": "00DDE6F0"
+    },
+    "widths": {
+     "A": 13.0,
+     "B": 70.0,
+     "C": 8.0,
+     "D": 8.0,
+     "E": 9.0,
+     "F": 66.0
+    },
+    "freeze": null,
+    "filter": null
+   },
+   {
+    "name": "L",
+    "rows": [
+     [
+      "File",
+      "Sheet",
+      "Excel row",
+      "Lot",
+      "Made",
+      "Notes"
+     ],
+     [
+      "lots.xlsx",
+      "Lots",
+      4,
+      "A3",
+      {
+       "d": "2024-03-01T00:00:00"
+      },
+      "ok"
+     ]
+    ],
+    "fills": {},
+    "widths": {
+     "A": 11.0,
+     "B": 8.0,
+     "C": 11.0,
+     "D": 8.0,
+     "E": 21.0,
+     "F": 8.0
+    },
+    "freeze": "A2",
+    "filter": "A1:F2"
+   }
+  ]
+ },
+ {
+  "name": "join_inner",
+  "query": {
+   "version": 1,
+   "name": "Join Inner",
+   "description": "Golden case join_inner",
+   "mode": "join",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": [
+     {
+      "source": "L",
+      "column": "Status",
+      "op": "=",
+      "value": "Pass",
+      "enabled": true
+     },
+     {
+      "source": "R",
+      "column": "Value",
+      "op": ">",
+      "value": "2e7",
+      "enabled": true
+     }
+    ]
+   },
+   "outputs": {
+    "L": [
+     "Status"
+    ],
+    "R": [
+     "Value"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "Joined",
+    "columns": [
+     "Key",
+     "L Excel row",
+     "L.Status",
+     "R Excel row",
+     "R.Value"
+    ],
+    "cells": {
+     "Key": [
+      "A1"
+     ],
+     "L Excel row": [
+      2
+     ],
+     "L.Status": [
+      "Pass"
+     ],
+     "R Excel row": [
+      2
+     ],
+     "R.Value": [
+      50000000
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "Joined": {
+    "Key": [
+     false
+    ],
+    "L Excel row": [
+     false
+    ],
+    "L.Status": [
+     true
+    ],
+    "R Excel row": [
+     false
+    ],
+    "R.Value": [
+     true
+    ]
+   }
+  },
+  "colors": {
+   "Joined": {
+    "Key": [
+     ""
+    ],
+    "L Excel row": [
+     ""
+    ],
+    "L.Status": [
+     ""
+    ],
+    "R Excel row": [
+     ""
+    ],
+    "R.Value": [
+     ""
+    ]
+   }
+  },
+  "warnings": [
+   "L: 1 row(s) with a blank key never match another sheet",
+   "R: 1 key value(s) in 'Lot ID' appear on more than one row; each such row is paired with every match in the other sheets"
+  ],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 1,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 1,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   }
+  ]
+ },
+ {
+  "name": "join_inner_all",
+  "query": {
+   "version": 1,
+   "name": "Join Inner All",
+   "description": "Golden case join_inner_all",
+   "mode": "join",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": []
+   },
+   "outputs": {
+    "L": [
+     "Status"
+    ],
+    "R": [
+     "Value"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "Joined",
+    "columns": [
+     "Key",
+     "L Excel row",
+     "L.Status",
+     "R Excel row",
+     "R.Value"
+    ],
+    "cells": {
+     "Key": [
+      "A1",
+      "A2",
+      "A2",
+      101
+     ],
+     "L Excel row": [
+      2,
+      3,
+      3,
+      5
+     ],
+     "L.Status": [
+      "Pass",
+      "Fail",
+      "Fail",
+      "Pass"
+     ],
+     "R Excel row": [
+      2,
+      3,
+      4,
+      5
+     ],
+     "R.Value": [
+      50000000,
+      70000000,
+      60000000,
+      10000000
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "Joined": {
+    "Key": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "L Excel row": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "L.Status": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "R Excel row": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "R.Value": [
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "colors": {
+   "Joined": {
+    "Key": [
+     "",
+     "",
+     "",
+     ""
+    ],
+    "L Excel row": [
+     "",
+     "",
+     "",
+     ""
+    ],
+    "L.Status": [
+     "",
+     "",
+     "",
+     ""
+    ],
+    "R Excel row": [
+     "",
+     "",
+     "",
+     ""
+    ],
+    "R.Value": [
+     "",
+     "",
+     "",
+     ""
+    ]
+   }
+  },
+  "warnings": [
+   "L: 1 row(s) with a blank key never match another sheet",
+   "R: 1 key value(s) in 'Lot ID' appear on more than one row; each such row is paired with every match in the other sheets"
+  ],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 4,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 4,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   }
+  ]
+ },
+ {
+  "name": "join_left",
+  "query": {
+   "version": 1,
+   "name": "Join Left",
+   "description": "Golden case join_left",
+   "mode": "join",
+   "join_how": "left",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": []
+   },
+   "outputs": {
+    "L": [
+     "Status",
+     "Made"
+    ],
+    "R": [
+     "Value",
+     "Pct"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "Joined",
+    "columns": [
+     "Key",
+     "L Excel row",
+     "L.Status",
+     "L.Made",
+     "R Excel row",
+     "R.Value",
+     "R.Pct"
+    ],
+    "cells": {
+     "Key": [
+      "A1",
+      "A2",
+      "A2",
+      "A3",
+      101,
+      null
+     ],
+     "L Excel row": [
+      2,
+      3,
+      3,
+      4,
+      5,
+      6
+     ],
+     "L.Status": [
+      "Pass",
+      "Fail",
+      "Fail",
+      "pass",
+      "Pass",
+      "Fail"
+     ],
+     "L.Made": [
+      {
+       "d": "2024-01-05T00:00:00"
+      },
+      {
+       "d": "2024-02-10T00:00:00"
+      },
+      {
+       "d": "2024-02-10T00:00:00"
+      },
+      {
+       "d": "2024-03-01T00:00:00"
+      },
+      {
+       "d": "2024-03-15T00:00:00"
+      },
+      {
+       "d": "2024-04-01T00:00:00"
+      }
+     ],
+     "R Excel row": [
+      2,
+      3,
+      4,
+      null,
+      5,
+      null
+     ],
+     "R.Value": [
+      50000000.0,
+      70000000.0,
+      60000000.0,
+      null,
+      10000000.0,
+      null
+     ],
+     "R.Pct": [
+      "50%",
+      "80%",
+      "90%",
+      null,
+      "10%",
+      null
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "Joined": {
+    "Key": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "L Excel row": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "L.Status": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "L.Made": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "R Excel row": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "R.Value": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "R.Pct": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "colors": {
+   "Joined": {
+    "Key": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "L Excel row": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "L.Status": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "L.Made": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "R Excel row": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "R.Value": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "R.Pct": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ]
+   }
+  },
+  "warnings": [
+   "L: 1 row(s) with a blank key never match another sheet",
+   "R: 1 key value(s) in 'Lot ID' appear on more than one row; each such row is paired with every match in the other sheets"
+  ],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 6,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 4,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   }
+  ],
+  "xlsx": [
+   {
+    "name": "Query",
+    "rows": [
+     [
+      "Query",
+      "Join Left",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Description",
+      "Golden case join_left",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Mode",
+      "Join on key columns",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Join type",
+      "left",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Keys",
+      "L › Lot, R › Lot ID",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Conditions",
+      "(all rows)",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Run at",
+      "{RUN_AT}",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Rows out: Joined",
+      6,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Warning",
+      "L: 1 row(s) with a blank key never match another sheet",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Warning",
+      "R: 1 key value(s) in 'Lot ID' appear on more than one row; each such row is paired with every match in the other sheets",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Source",
+      "File",
+      "Sheet",
+      "Rows",
+      "Matched",
+      "SHA-256"
+     ],
+     [
+      "L",
+      "{DIR}/data/lots.xlsx",
+      "Lots",
+      5,
+      6,
+      "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+     ],
+     [
+      "R",
+      "{DIR}/data/results.xlsx",
+      "Results",
+      5,
+      4,
+      "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+     ]
+    ],
+    "fills": {
+     "A13": "00DDE6F0",
+     "B13": "00DDE6F0",
+     "C13": "00DDE6F0",
+     "D13": "00DDE6F0",
+     "E13": "00DDE6F0",
+     "F13": "00DDE6F0"
+    },
+    "widths": {
+     "A": 18.0,
+     "B": 80.0,
+     "C": 9.0,
+     "D": 8.0,
+     "E": 9.0,
+     "F": 66.0
+    },
+    "freeze": null,
+    "filter": null
+   },
+   {
+    "name": "Joined",
+    "rows": [
+     [
+      "Key",
+      "L Excel row",
+      "L.Status",
+      "L.Made",
+      "R Excel row",
+      "R.Value",
+      "R.Pct"
+     ],
+     [
+      "A1",
+      2,
+      "Pass",
+      {
+       "d": "2024-01-05T00:00:00"
+      },
+      2,
+      50000000,
+      "50%"
+     ],
+     [
+      "A2",
+      3,
+      "Fail",
+      {
+       "d": "2024-02-10T00:00:00"
+      },
+      3,
+      70000000,
+      "80%"
+     ],
+     [
+      "A2",
+      3,
+      "Fail",
+      {
+       "d": "2024-02-10T00:00:00"
+      },
+      4,
+      60000000,
+      "90%"
+     ],
+     [
+      "A3",
+      4,
+      "pass",
+      {
+       "d": "2024-03-01T00:00:00"
+      },
+      null,
+      null,
+      null
+     ],
+     [
+      101,
+      5,
+      "Pass",
+      {
+       "d": "2024-03-15T00:00:00"
+      },
+      5,
+      10000000,
+      "10%"
+     ],
+     [
+      null,
+      6,
+      "Fail",
+      {
+       "d": "2024-04-01T00:00:00"
+      },
+      null,
+      null,
+      null
+     ]
+    ],
+    "fills": {},
+    "widths": {
+     "A": 8.0,
+     "B": 13.0,
+     "C": 10.0,
+     "D": 21.0,
+     "E": 13.0,
+     "F": 12.0,
+     "G": 8.0
+    },
+    "freeze": "A2",
+    "filter": "A1:G7"
+   }
+  ]
+ },
+ {
+  "name": "join_outer",
+  "query": {
+   "version": 1,
+   "name": "Join Outer",
+   "description": "Golden case join_outer",
+   "mode": "join",
+   "join_how": "outer",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": []
+   },
+   "outputs": {
+    "L": [
+     "Status",
+     "Made"
+    ],
+    "R": [
+     "Value"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "Joined",
+    "columns": [
+     "Key",
+     "L Excel row",
+     "L.Status",
+     "L.Made",
+     "R Excel row",
+     "R.Value"
+    ],
+    "cells": {
+     "Key": [
+      null,
+      101,
+      "A1",
+      "A2",
+      "A2",
+      "A3",
+      "Z9"
+     ],
+     "L Excel row": [
+      6,
+      5,
+      2,
+      3,
+      3,
+      4,
+      null
+     ],
+     "L.Status": [
+      "Fail",
+      "Pass",
+      "Pass",
+      "Fail",
+      "Fail",
+      "pass",
+      null
+     ],
+     "L.Made": [
+      {
+       "d": "2024-04-01T00:00:00"
+      },
+      {
+       "d": "2024-03-15T00:00:00"
+      },
+      {
+       "d": "2024-01-05T00:00:00"
+      },
+      {
+       "d": "2024-02-10T00:00:00"
+      },
+      {
+       "d": "2024-02-10T00:00:00"
+      },
+      {
+       "d": "2024-03-01T00:00:00"
+      },
+      null
+     ],
+     "R Excel row": [
+      null,
+      5,
+      2,
+      3,
+      4,
+      null,
+      6
+     ],
+     "R.Value": [
+      null,
+      10000000.0,
+      50000000.0,
+      70000000.0,
+      60000000.0,
+      null,
+      30000000.0
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "Joined": {
+    "Key": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "L Excel row": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "L.Status": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "L.Made": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "R Excel row": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "R.Value": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "colors": {
+   "Joined": {
+    "Key": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "L Excel row": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "L.Status": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "L.Made": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "R Excel row": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "R.Value": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ]
+   }
+  },
+  "warnings": [
+   "L: 1 row(s) with a blank key never match another sheet",
+   "R: 1 key value(s) in 'Lot ID' appear on more than one row; each such row is paired with every match in the other sheets"
+  ],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 6,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 5,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   }
+  ],
+  "xlsx": [
+   {
+    "name": "Query",
+    "rows": [
+     [
+      "Query",
+      "Join Outer",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Description",
+      "Golden case join_outer",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Mode",
+      "Join on key columns",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Join type",
+      "outer",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Keys",
+      "L › Lot, R › Lot ID",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Conditions",
+      "(all rows)",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Run at",
+      "{RUN_AT}",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Rows out: Joined",
+      7,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Warning",
+      "L: 1 row(s) with a blank key never match another sheet",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Warning",
+      "R: 1 key value(s) in 'Lot ID' appear on more than one row; each such row is paired with every match in the other sheets",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Source",
+      "File",
+      "Sheet",
+      "Rows",
+      "Matched",
+      "SHA-256"
+     ],
+     [
+      "L",
+      "{DIR}/data/lots.xlsx",
+      "Lots",
+      5,
+      6,
+      "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+     ],
+     [
+      "R",
+      "{DIR}/data/results.xlsx",
+      "Results",
+      5,
+      5,
+      "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+     ]
+    ],
+    "fills": {
+     "A13": "00DDE6F0",
+     "B13": "00DDE6F0",
+     "C13": "00DDE6F0",
+     "D13": "00DDE6F0",
+     "E13": "00DDE6F0",
+     "F13": "00DDE6F0"
+    },
+    "widths": {
+     "A": 18.0,
+     "B": 80.0,
+     "C": 9.0,
+     "D": 8.0,
+     "E": 9.0,
+     "F": 66.0
+    },
+    "freeze": null,
+    "filter": null
+   },
+   {
+    "name": "Joined",
+    "rows": [
+     [
+      "Key",
+      "L Excel row",
+      "L.Status",
+      "L.Made",
+      "R Excel row",
+      "R.Value"
+     ],
+     [
+      null,
+      6,
+      "Fail",
+      {
+       "d": "2024-04-01T00:00:00"
+      },
+      null,
+      null
+     ],
+     [
+      101,
+      5,
+      "Pass",
+      {
+       "d": "2024-03-15T00:00:00"
+      },
+      5,
+      10000000
+     ],
+     [
+      "A1",
+      2,
+      "Pass",
+      {
+       "d": "2024-01-05T00:00:00"
+      },
+      2,
+      50000000
+     ],
+     [
+      "A2",
+      3,
+      "Fail",
+      {
+       "d": "2024-02-10T00:00:00"
+      },
+      3,
+      70000000
+     ],
+     [
+      "A2",
+      3,
+      "Fail",
+      {
+       "d": "2024-02-10T00:00:00"
+      },
+      4,
+      60000000
+     ],
+     [
+      "A3",
+      4,
+      "pass",
+      {
+       "d": "2024-03-01T00:00:00"
+      },
+      null,
+      null
+     ],
+     [
+      "Z9",
+      null,
+      null,
+      null,
+      6,
+      30000000
+     ]
+    ],
+    "fills": {},
+    "widths": {
+     "A": 8.0,
+     "B": 13.0,
+     "C": 10.0,
+     "D": 21.0,
+     "E": 13.0,
+     "F": 12.0
+    },
+    "freeze": "A2",
+    "filter": "A1:F8"
+   }
+  ]
+ },
+ {
+  "name": "join_outer_r",
+  "query": {
+   "version": 1,
+   "name": "Join Outer R",
+   "description": "Golden case join_outer_r",
+   "mode": "join",
+   "join_how": "outer",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": [
+     {
+      "source": "R",
+      "column": "Value",
+      "op": "is not blank",
+      "value": "",
+      "enabled": true
+     }
+    ]
+   },
+   "outputs": {
+    "L": [
+     "Status"
+    ],
+    "R": [
+     "Value"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "Joined",
+    "columns": [
+     "Key",
+     "L Excel row",
+     "L.Status",
+     "R Excel row",
+     "R.Value"
+    ],
+    "cells": {
+     "Key": [
+      101,
+      "A1",
+      "A2",
+      "A2",
+      "Z9"
+     ],
+     "L Excel row": [
+      5,
+      2,
+      3,
+      3,
+      null
+     ],
+     "L.Status": [
+      "Pass",
+      "Pass",
+      "Fail",
+      "Fail",
+      null
+     ],
+     "R Excel row": [
+      5,
+      2,
+      3,
+      4,
+      6
+     ],
+     "R.Value": [
+      10000000.0,
+      50000000.0,
+      70000000.0,
+      60000000.0,
+      30000000.0
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "Joined": {
+    "Key": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "L Excel row": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "L.Status": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "R Excel row": [
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "R.Value": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   }
+  },
+  "colors": {
+   "Joined": {
+    "Key": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "L Excel row": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "L.Status": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "R Excel row": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "R.Value": [
+     "",
+     "",
+     "",
+     "",
+     ""
+    ]
+   }
+  },
+  "warnings": [
+   "L: 1 row(s) with a blank key never match another sheet",
+   "R: 1 key value(s) in 'Lot ID' appear on more than one row; each such row is paired with every match in the other sheets"
+  ],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 4,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 5,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   }
+  ]
+ },
+ {
+  "name": "join_any_sheet",
+  "query": {
+   "version": 1,
+   "name": "Join Any Sheet",
+   "description": "Golden case join_any_sheet",
+   "mode": "join",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": [
+     {
+      "source": "*",
+      "column": "Status",
+      "op": "=",
+      "value": "fail",
+      "enabled": true
+     }
+    ]
+   },
+   "outputs": {
+    "L": [
+     "Status"
+    ],
+    "R": [
+     "Value"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "Joined",
+    "columns": [
+     "Key",
+     "L Excel row",
+     "L.Status",
+     "R Excel row",
+     "R.Value"
+    ],
+    "cells": {
+     "Key": [
+      "A2",
+      "A2"
+     ],
+     "L Excel row": [
+      3,
+      3
+     ],
+     "L.Status": [
+      "Fail",
+      "Fail"
+     ],
+     "R Excel row": [
+      3,
+      4
+     ],
+     "R.Value": [
+      70000000,
+      60000000
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "Joined": {
+    "Key": [
+     false,
+     false
+    ],
+    "L Excel row": [
+     false,
+     false
+    ],
+    "L.Status": [
+     true,
+     true
+    ],
+    "R Excel row": [
+     false,
+     false
+    ],
+    "R.Value": [
+     false,
+     false
+    ]
+   }
+  },
+  "colors": {
+   "Joined": {
+    "Key": [
+     "",
+     ""
+    ],
+    "L Excel row": [
+     "",
+     ""
+    ],
+    "L.Status": [
+     "",
+     ""
+    ],
+    "R Excel row": [
+     "",
+     ""
+    ],
+    "R.Value": [
+     "",
+     ""
+    ]
+   }
+  },
+  "warnings": [
+   "L: 1 row(s) with a blank key never match another sheet",
+   "R: 1 key value(s) in 'Lot ID' appear on more than one row; each such row is paired with every match in the other sheets"
+  ],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 2,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 2,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   }
+  ]
+ },
+ {
+  "name": "join_case",
+  "query": {
+   "version": 1,
+   "name": "Join Case",
+   "description": "Golden case join_case",
+   "mode": "join",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": [
+     {
+      "source": "*",
+      "column": "STATUS",
+      "op": "=",
+      "value": "fail",
+      "enabled": true
+     },
+     {
+      "source": "R",
+      "column": "value",
+      "op": ">",
+      "value": "6.5e7",
+      "enabled": true
+     }
+    ]
+   },
+   "outputs": {
+    "L": [
+     "Status"
+    ],
+    "R": [
+     "Value"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "Joined",
+    "columns": [
+     "Key",
+     "L Excel row",
+     "L.Status",
+     "R Excel row",
+     "R.Value"
+    ],
+    "cells": {
+     "Key": [
+      "A2"
+     ],
+     "L Excel row": [
+      3
+     ],
+     "L.Status": [
+      "Fail"
+     ],
+     "R Excel row": [
+      3
+     ],
+     "R.Value": [
+      70000000
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "Joined": {
+    "Key": [
+     false
+    ],
+    "L Excel row": [
+     false
+    ],
+    "L.Status": [
+     true
+    ],
+    "R Excel row": [
+     false
+    ],
+    "R.Value": [
+     true
+    ]
+   }
+  },
+  "colors": {
+   "Joined": {
+    "Key": [
+     ""
+    ],
+    "L Excel row": [
+     ""
+    ],
+    "L.Status": [
+     ""
+    ],
+    "R Excel row": [
+     ""
+    ],
+    "R.Value": [
+     ""
+    ]
+   }
+  },
+  "warnings": [
+   "L: 1 row(s) with a blank key never match another sheet",
+   "R: 1 key value(s) in 'Lot ID' appear on more than one row; each such row is paired with every match in the other sheets"
+  ],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 1,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 1,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   }
+  ]
+ },
+ {
+  "name": "join_no_key",
+  "query": {
+   "version": 1,
+   "name": "Join No Key",
+   "description": "Golden case join_no_key",
+   "mode": "join",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": []
+   },
+   "outputs": {
+    "L": [
+     "Status"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": ""
+    }
+   ]
+  },
+  "error": "R: choose a key column to join on"
+ },
+ {
+  "name": "join_three",
+  "query": {
+   "version": 1,
+   "name": "Join Three",
+   "description": "Golden case join_three",
+   "mode": "join",
+   "join_how": "outer",
+   "include_provenance": false,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": []
+   },
+   "outputs": {
+    "L": [
+     "Status"
+    ],
+    "R": [
+     "Value"
+    ],
+    "O": [
+     "Owner"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    },
+    {
+     "alias": "O",
+     "path": "data/lots.xlsx",
+     "sheet": "Owners",
+     "key": "Lot"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "Joined",
+    "columns": [
+     "Key",
+     "L.Status",
+     "R.Value",
+     "O.Owner"
+    ],
+    "cells": {
+     "Key": [
+      null,
+      101,
+      "A1",
+      "A2",
+      "A2",
+      "A3",
+      "Z9"
+     ],
+     "L.Status": [
+      "Fail",
+      "Pass",
+      "Pass",
+      "Fail",
+      "Fail",
+      "pass",
+      null
+     ],
+     "R.Value": [
+      null,
+      10000000.0,
+      50000000.0,
+      70000000.0,
+      60000000.0,
+      null,
+      30000000.0
+     ],
+     "O.Owner": [
+      null,
+      null,
+      "Kim",
+      "Lee",
+      "Lee",
+      null,
+      null
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "Joined": {
+    "Key": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "L.Status": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "R.Value": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "O.Owner": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "colors": {
+   "Joined": {
+    "Key": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "L.Status": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "R.Value": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "O.Owner": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ]
+   }
+  },
+  "warnings": [
+   "L: 1 row(s) with a blank key never match another sheet",
+   "R: 1 key value(s) in 'Lot ID' appear on more than one row; each such row is paired with every match in the other sheets"
+  ],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 6,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 5,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   },
+   {
+    "alias": "O",
+    "rows": 2,
+    "matched": 3,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   }
+  ]
+ },
+ {
+  "name": "join_left_three",
+  "query": {
+   "version": 1,
+   "name": "Join Left Three",
+   "description": "Golden case join_left_three",
+   "mode": "join",
+   "join_how": "left",
+   "include_provenance": true,
+   "where": {
+    "logic": "OR",
+    "negate": false,
+    "items": [
+     {
+      "source": "*",
+      "column": "Owner",
+      "op": "is blank",
+      "value": "",
+      "enabled": true
+     },
+     {
+      "source": "R",
+      "column": "Pct",
+      "op": "<",
+      "value": "60%",
+      "enabled": true
+     }
+    ]
+   },
+   "outputs": {
+    "L": [
+     "Status"
+    ],
+    "R": [
+     "Value"
+    ],
+    "O": [
+     "Owner"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Lots",
+     "key": "Lot"
+    },
+    {
+     "alias": "O",
+     "path": "data/lots.xlsx",
+     "sheet": "Owners",
+     "key": "Lot"
+    },
+    {
+     "alias": "R",
+     "path": "data/results.xlsx",
+     "sheet": "Results",
+     "key": "Lot ID"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "Joined",
+    "columns": [
+     "Key",
+     "L Excel row",
+     "L.Status",
+     "O Excel row",
+     "O.Owner",
+     "R Excel row",
+     "R.Value"
+    ],
+    "cells": {
+     "Key": [
+      "A1",
+      "A3",
+      101,
+      null
+     ],
+     "L Excel row": [
+      2,
+      4,
+      5,
+      6
+     ],
+     "L.Status": [
+      "Pass",
+      "pass",
+      "Pass",
+      "Fail"
+     ],
+     "O Excel row": [
+      2,
+      null,
+      null,
+      null
+     ],
+     "O.Owner": [
+      "Kim",
+      null,
+      null,
+      null
+     ],
+     "R Excel row": [
+      2,
+      null,
+      5,
+      null
+     ],
+     "R.Value": [
+      50000000.0,
+      null,
+      10000000.0,
+      null
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "Joined": {
+    "Key": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "L Excel row": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "L.Status": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "O Excel row": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "O.Owner": [
+     false,
+     true,
+     true,
+     true
+    ],
+    "R Excel row": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "R.Value": [
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "colors": {
+   "Joined": {
+    "Key": [
+     "",
+     "",
+     "",
+     ""
+    ],
+    "L Excel row": [
+     "",
+     "",
+     "",
+     ""
+    ],
+    "L.Status": [
+     "",
+     "",
+     "",
+     ""
+    ],
+    "O Excel row": [
+     "",
+     "",
+     "",
+     ""
+    ],
+    "O.Owner": [
+     "",
+     "",
+     "",
+     ""
+    ],
+    "R Excel row": [
+     "",
+     "",
+     "",
+     ""
+    ],
+    "R.Value": [
+     "",
+     "",
+     "",
+     ""
+    ]
+   }
+  },
+  "warnings": [
+   "L: 1 row(s) with a blank key never match another sheet",
+   "R: 1 key value(s) in 'Lot ID' appear on more than one row; each such row is paired with every match in the other sheets"
+  ],
+  "sources": [
+   {
+    "alias": "L",
+    "rows": 5,
+    "matched": 4,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "O",
+    "rows": 2,
+    "matched": 1,
+    "sha256": "ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134"
+   },
+   {
+    "alias": "R",
+    "rows": 5,
+    "matched": 2,
+    "sha256": "e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea"
+   }
+  ]
+ },
+ {
+  "name": "em_colors",
+  "query": {
+   "version": 1,
+   "name": "Em Colors",
+   "description": "Golden case em_colors",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "OR",
+    "negate": false,
+    "items": [
+     {
+      "logic": "AND",
+      "negate": false,
+      "items": [
+       {
+        "source": "*",
+        "column": "Person 1",
+        "op": "=",
+        "value": "KSG",
+        "enabled": true
+       },
+       {
+        "logic": "OR",
+        "negate": false,
+        "items": [
+         {
+          "source": "*",
+          "column": "Chest 1",
+          "op": "<>",
+          "value": "0",
+          "enabled": true,
+          "color": "#ff0000"
+         },
+         {
+          "source": "*",
+          "column": "Hand 1",
+          "op": "<>",
+          "value": "0",
+          "enabled": true,
+          "color": "#ff0000"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "logic": "AND",
+      "negate": false,
+      "items": [
+       {
+        "source": "*",
+        "column": "Person 2",
+        "op": "=",
+        "value": "KSG",
+        "enabled": true
+       },
+       {
+        "logic": "OR",
+        "negate": false,
+        "items": [
+         {
+          "source": "*",
+          "column": "Chest 1 (2)",
+          "op": "<>",
+          "value": "0",
+          "enabled": true,
+          "color": "#0000ff"
+         },
+         {
+          "source": "*",
+          "column": "Hand 1 (2)",
+          "op": "<>",
+          "value": "0",
+          "enabled": true,
+          "color": "#0000ff"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "outputs": {
+    "EM": [
+     "Monitor Date",
+     "Person 1",
+     "Chest 1",
+     "Hand 1",
+     "Person 2",
+     "Chest 1 (2)",
+     "Hand 1 (2)"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "EM",
+     "path": "data/em.xlsx",
+     "sheet": "Sheet",
+     "key": "Monitor Date"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "EM",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Monitor Date",
+     "Person 1",
+     "Chest 1",
+     "Hand 1",
+     "Person 2",
+     "Chest 1 (2)",
+     "Hand 1 (2)"
+    ],
+    "cells": {
+     "File": [
+      "em.xlsx",
+      "em.xlsx",
+      "em.xlsx"
+     ],
+     "Sheet": [
+      "Sheet",
+      "Sheet",
+      "Sheet"
+     ],
+     "Excel row": [
+      2,
+      3,
+      4
+     ],
+     "Monitor Date": [
+      {
+       "d": "2026-01-05T00:00:00"
+      },
+      {
+       "d": "2026-01-06T00:00:00"
+      },
+      {
+       "d": "2026-01-07T00:00:00"
+      }
+     ],
+     "Person 1": [
+      "KSG",
+      "ZEN",
+      "KSG"
+     ],
+     "Chest 1": [
+      0,
+      5,
+      "1 Micrococcus luteus"
+     ],
+     "Hand 1": [
+      2,
+      0,
+      0
+     ],
+     "Person 2": [
+      "TJH",
+      "KSG",
+      "ZEN"
+     ],
+     "Chest 1 (2)": [
+      4,
+      0,
+      0
+     ],
+     "Hand 1 (2)": [
+      0,
+      3,
+      "TNTC"
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "EM": {
+    "File": [
+     false,
+     false,
+     false
+    ],
+    "Sheet": [
+     false,
+     false,
+     false
+    ],
+    "Excel row": [
+     false,
+     false,
+     false
+    ],
+    "Monitor Date": [
+     false,
+     false,
+     false
+    ],
+    "Person 1": [
+     true,
+     false,
+     true
+    ],
+    "Chest 1": [
+     false,
+     false,
+     true
+    ],
+    "Hand 1": [
+     true,
+     false,
+     false
+    ],
+    "Person 2": [
+     false,
+     true,
+     false
+    ],
+    "Chest 1 (2)": [
+     false,
+     false,
+     false
+    ],
+    "Hand 1 (2)": [
+     false,
+     true,
+     false
+    ]
+   }
+  },
+  "colors": {
+   "EM": {
+    "File": [
+     "",
+     "",
+     ""
+    ],
+    "Sheet": [
+     "",
+     "",
+     ""
+    ],
+    "Excel row": [
+     "",
+     "",
+     ""
+    ],
+    "Monitor Date": [
+     "",
+     "",
+     ""
+    ],
+    "Person 1": [
+     "",
+     "",
+     ""
+    ],
+    "Chest 1": [
+     "",
+     "",
+     "#ff0000"
+    ],
+    "Hand 1": [
+     "#ff0000",
+     "",
+     ""
+    ],
+    "Person 2": [
+     "",
+     "",
+     ""
+    ],
+    "Chest 1 (2)": [
+     "",
+     "",
+     ""
+    ],
+    "Hand 1 (2)": [
+     "",
+     "#0000ff",
+     ""
+    ]
+   }
+  },
+  "warnings": [],
+  "sources": [
+   {
+    "alias": "EM",
+    "rows": 4,
+    "matched": 3,
+    "sha256": "c5c2a91ad72452ff441c723b04552af503fa1331994fa5bd8a3708d1c3aed225"
+   }
+  ],
+  "xlsx": [
+   {
+    "name": "Query",
+    "rows": [
+     [
+      "Query",
+      "Em Colors",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Description",
+      "Golden case em_colors",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Mode",
+      "Each sheet filtered on its own",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Conditions",
+      "(Any sheet › Person 1 = 'KSG' AND (Any sheet › Chest 1 <> '0' OR Any sheet › Hand 1 <> '0')) OR (Any sheet › Person 2 = 'KSG' AND (Any sheet › Chest 1 (2) <> '0' OR Any sheet › Hand 1 (2) <> '0'))",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Run at",
+      "{RUN_AT}",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Rows out: EM",
+      3,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Source",
+      "File",
+      "Sheet",
+      "Rows",
+      "Matched",
+      "SHA-256"
+     ],
+     [
+      "EM",
+      "{DIR}/data/em.xlsx",
+      "Sheet",
+      4,
+      3,
+      "c5c2a91ad72452ff441c723b04552af503fa1331994fa5bd8a3708d1c3aed225"
+     ]
+    ],
+    "fills": {
+     "A8": "00DDE6F0",
+     "B8": "00DDE6F0",
+     "C8": "00DDE6F0",
+     "D8": "00DDE6F0",
+     "E8": "00DDE6F0",
+     "F8": "00DDE6F0"
+    },
+    "widths": {
+     "A": 14.0,
+     "B": 80.0,
+     "C": 8.0,
+     "D": 8.0,
+     "E": 9.0,
+     "F": 66.0
+    },
+    "freeze": null,
+    "filter": null
+   },
+   {
+    "name": "EM",
+    "rows": [
+     [
+      "File",
+      "Sheet",
+      "Excel row",
+      "Monitor Date",
+      "Person 1",
+      "Chest 1",
+      "Hand 1",
+      "Person 2",
+      "Chest 1 (2)",
+      "Hand 1 (2)"
+     ],
+     [
+      "em.xlsx",
+      "Sheet",
+      2,
+      {
+       "d": "2026-01-05T00:00:00"
+      },
+      "KSG",
+      0,
+      2,
+      "TJH",
+      4,
+      0
+     ],
+     [
+      "em.xlsx",
+      "Sheet",
+      3,
+      {
+       "d": "2026-01-06T00:00:00"
+      },
+      "ZEN",
+      5,
+      0,
+      "KSG",
+      0,
+      3
+     ],
+     [
+      "em.xlsx",
+      "Sheet",
+      4,
+      {
+       "d": "2026-01-07T00:00:00"
+      },
+      "KSG",
+      "1 Micrococcus luteus",
+      0,
+      "ZEN",
+      0,
+      "TNTC"
+     ]
+    ],
+    "fills": {
+     "G2": "00FF0000",
+     "J3": "000000FF",
+     "F4": "00FF0000"
+    },
+    "widths": {
+     "A": 9.0,
+     "B": 8.0,
+     "C": 11.0,
+     "D": 21.0,
+     "E": 10.0,
+     "F": 22.0,
+     "G": 8.0,
+     "H": 10.0,
+     "I": 13.0,
+     "J": 12.0
+    },
+    "freeze": "A2",
+    "filter": "A1:J4"
+   }
+  ]
+ },
+ {
+  "name": "em_first_color",
+  "query": {
+   "version": 1,
+   "name": "Em First Color",
+   "description": "Golden case em_first_color",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": [
+     {
+      "source": "*",
+      "column": "Hand 1",
+      "op": ">",
+      "value": "1",
+      "enabled": true,
+      "color": "#0000ff"
+     },
+     {
+      "source": "*",
+      "column": "Hand 1",
+      "op": "<>",
+      "value": "0",
+      "enabled": true,
+      "color": "#ff0000"
+     }
+    ]
+   },
+   "outputs": {
+    "EM": [
+     "Monitor Date",
+     "Person 1",
+     "Chest 1",
+     "Hand 1",
+     "Person 2",
+     "Chest 1 (2)",
+     "Hand 1 (2)"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "EM",
+     "path": "data/em.xlsx",
+     "sheet": "Sheet",
+     "key": "Monitor Date"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "EM",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Monitor Date",
+     "Person 1",
+     "Chest 1",
+     "Hand 1",
+     "Person 2",
+     "Chest 1 (2)",
+     "Hand 1 (2)"
+    ],
+    "cells": {
+     "File": [
+      "em.xlsx"
+     ],
+     "Sheet": [
+      "Sheet"
+     ],
+     "Excel row": [
+      2
+     ],
+     "Monitor Date": [
+      {
+       "d": "2026-01-05T00:00:00"
+      }
+     ],
+     "Person 1": [
+      "KSG"
+     ],
+     "Chest 1": [
+      0
+     ],
+     "Hand 1": [
+      2
+     ],
+     "Person 2": [
+      "TJH"
+     ],
+     "Chest 1 (2)": [
+      4
+     ],
+     "Hand 1 (2)": [
+      0
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "EM": {
+    "File": [
+     false
+    ],
+    "Sheet": [
+     false
+    ],
+    "Excel row": [
+     false
+    ],
+    "Monitor Date": [
+     false
+    ],
+    "Person 1": [
+     false
+    ],
+    "Chest 1": [
+     false
+    ],
+    "Hand 1": [
+     true
+    ],
+    "Person 2": [
+     false
+    ],
+    "Chest 1 (2)": [
+     false
+    ],
+    "Hand 1 (2)": [
+     false
+    ]
+   }
+  },
+  "colors": {
+   "EM": {
+    "File": [
+     ""
+    ],
+    "Sheet": [
+     ""
+    ],
+    "Excel row": [
+     ""
+    ],
+    "Monitor Date": [
+     ""
+    ],
+    "Person 1": [
+     ""
+    ],
+    "Chest 1": [
+     ""
+    ],
+    "Hand 1": [
+     "#0000ff"
+    ],
+    "Person 2": [
+     ""
+    ],
+    "Chest 1 (2)": [
+     ""
+    ],
+    "Hand 1 (2)": [
+     ""
+    ]
+   }
+  },
+  "warnings": [],
+  "sources": [
+   {
+    "alias": "EM",
+    "rows": 4,
+    "matched": 1,
+    "sha256": "c5c2a91ad72452ff441c723b04552af503fa1331994fa5bd8a3708d1c3aed225"
+   }
+  ]
+ },
+ {
+  "name": "em_combined",
+  "query": {
+   "version": 1,
+   "name": "Em Combined",
+   "description": "Golden case em_combined",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "OR",
+    "negate": false,
+    "items": [
+     {
+      "logic": "AND",
+      "negate": false,
+      "items": [
+       {
+        "source": "*",
+        "column": "Person 1",
+        "op": "=",
+        "value": "KSG",
+        "enabled": true
+       },
+       {
+        "logic": "OR",
+        "negate": false,
+        "items": [
+         {
+          "source": "*",
+          "column": "Chest 1",
+          "op": "<>",
+          "value": "0",
+          "enabled": true,
+          "color": "#ff0000"
+         },
+         {
+          "source": "*",
+          "column": "Hand 1",
+          "op": "<>",
+          "value": "0",
+          "enabled": true,
+          "color": "#ff0000"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "logic": "AND",
+      "negate": false,
+      "items": [
+       {
+        "source": "*",
+        "column": "Person 2",
+        "op": "=",
+        "value": "KSG",
+        "enabled": true
+       },
+       {
+        "logic": "OR",
+        "negate": false,
+        "items": [
+         {
+          "source": "*",
+          "column": "Chest 1 (2)",
+          "op": "<>",
+          "value": "0",
+          "enabled": true,
+          "color": "#0000ff"
+         },
+         {
+          "source": "*",
+          "column": "Hand 1 (2)",
+          "op": "<>",
+          "value": "0",
+          "enabled": true,
+          "color": "#0000ff"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "outputs": {
+    "EM": [
+     "Monitor Date",
+     "Person 1",
+     "Chest 1",
+     "Hand 1",
+     "Person 2",
+     "Chest 1 (2)",
+     "Hand 1 (2)"
+    ],
+    "EM2": [
+     "Hand 1",
+     "Person 2"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "EM",
+     "path": "data/em.xlsx",
+     "sheet": "Sheet",
+     "key": "Monitor Date"
+    },
+    {
+     "alias": "EM2",
+     "path": "data/em.xlsx",
+     "sheet": "Sheet",
+     "key": "Monitor Date"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "All results",
+    "columns": [
+     "Source",
+     "File",
+     "Sheet",
+     "Excel row",
+     "Monitor Date",
+     "Person 1",
+     "Chest 1",
+     "Hand 1",
+     "Person 2",
+     "Chest 1 (2)",
+     "Hand 1 (2)"
+    ],
+    "cells": {
+     "Source": [
+      "EM",
+      "EM",
+      "EM",
+      "EM2",
+      "EM2",
+      "EM2"
+     ],
+     "File": [
+      "em.xlsx",
+      "em.xlsx",
+      "em.xlsx",
+      "em.xlsx",
+      "em.xlsx",
+      "em.xlsx"
+     ],
+     "Sheet": [
+      "Sheet",
+      "Sheet",
+      "Sheet",
+      "Sheet",
+      "Sheet",
+      "Sheet"
+     ],
+     "Excel row": [
+      2,
+      3,
+      4,
+      2,
+      3,
+      4
+     ],
+     "Monitor Date": [
+      {
+       "d": "2026-01-05T00:00:00"
+      },
+      {
+       "d": "2026-01-06T00:00:00"
+      },
+      {
+       "d": "2026-01-07T00:00:00"
+      },
+      null,
+      null,
+      null
+     ],
+     "Person 1": [
+      "KSG",
+      "ZEN",
+      "KSG",
+      null,
+      null,
+      null
+     ],
+     "Chest 1": [
+      0,
+      5,
+      "1 Micrococcus luteus",
+      null,
+      null,
+      null
+     ],
+     "Hand 1": [
+      2,
+      0,
+      0,
+      2,
+      0,
+      0
+     ],
+     "Person 2": [
+      "TJH",
+      "KSG",
+      "ZEN",
+      "TJH",
+      "KSG",
+      "ZEN"
+     ],
+     "Chest 1 (2)": [
+      4.0,
+      0.0,
+      0.0,
+      null,
+      null,
+      null
+     ],
+     "Hand 1 (2)": [
+      0,
+      3,
+      "TNTC",
+      null,
+      null,
+      null
+     ]
+    }
+   },
+   {
+    "name": "EM",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Monitor Date",
+     "Person 1",
+     "Chest 1",
+     "Hand 1",
+     "Person 2",
+     "Chest 1 (2)",
+     "Hand 1 (2)"
+    ],
+    "cells": {
+     "File": [
+      "em.xlsx",
+      "em.xlsx",
+      "em.xlsx"
+     ],
+     "Sheet": [
+      "Sheet",
+      "Sheet",
+      "Sheet"
+     ],
+     "Excel row": [
+      2,
+      3,
+      4
+     ],
+     "Monitor Date": [
+      {
+       "d": "2026-01-05T00:00:00"
+      },
+      {
+       "d": "2026-01-06T00:00:00"
+      },
+      {
+       "d": "2026-01-07T00:00:00"
+      }
+     ],
+     "Person 1": [
+      "KSG",
+      "ZEN",
+      "KSG"
+     ],
+     "Chest 1": [
+      0,
+      5,
+      "1 Micrococcus luteus"
+     ],
+     "Hand 1": [
+      2,
+      0,
+      0
+     ],
+     "Person 2": [
+      "TJH",
+      "KSG",
+      "ZEN"
+     ],
+     "Chest 1 (2)": [
+      4,
+      0,
+      0
+     ],
+     "Hand 1 (2)": [
+      0,
+      3,
+      "TNTC"
+     ]
+    }
+   },
+   {
+    "name": "EM2",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Hand 1",
+     "Person 2"
+    ],
+    "cells": {
+     "File": [
+      "em.xlsx",
+      "em.xlsx",
+      "em.xlsx"
+     ],
+     "Sheet": [
+      "Sheet",
+      "Sheet",
+      "Sheet"
+     ],
+     "Excel row": [
+      2,
+      3,
+      4
+     ],
+     "Hand 1": [
+      2,
+      0,
+      0
+     ],
+     "Person 2": [
+      "TJH",
+      "KSG",
+      "ZEN"
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "All results": {
+    "Source": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "File": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Sheet": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Excel row": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Monitor Date": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Person 1": [
+     true,
+     false,
+     true,
+     false,
+     false,
+     false
+    ],
+    "Chest 1": [
+     false,
+     false,
+     true,
+     false,
+     false,
+     false
+    ],
+    "Hand 1": [
+     true,
+     false,
+     false,
+     true,
+     false,
+     false
+    ],
+    "Person 2": [
+     false,
+     true,
+     false,
+     false,
+     true,
+     false
+    ],
+    "Chest 1 (2)": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "Hand 1 (2)": [
+     false,
+     true,
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "EM": {
+    "File": [
+     false,
+     false,
+     false
+    ],
+    "Sheet": [
+     false,
+     false,
+     false
+    ],
+    "Excel row": [
+     false,
+     false,
+     false
+    ],
+    "Monitor Date": [
+     false,
+     false,
+     false
+    ],
+    "Person 1": [
+     true,
+     false,
+     true
+    ],
+    "Chest 1": [
+     false,
+     false,
+     true
+    ],
+    "Hand 1": [
+     true,
+     false,
+     false
+    ],
+    "Person 2": [
+     false,
+     true,
+     false
+    ],
+    "Chest 1 (2)": [
+     false,
+     false,
+     false
+    ],
+    "Hand 1 (2)": [
+     false,
+     true,
+     false
+    ]
+   },
+   "EM2": {
+    "File": [
+     false,
+     false,
+     false
+    ],
+    "Sheet": [
+     false,
+     false,
+     false
+    ],
+    "Excel row": [
+     false,
+     false,
+     false
+    ],
+    "Hand 1": [
+     true,
+     false,
+     false
+    ],
+    "Person 2": [
+     false,
+     true,
+     false
+    ]
+   }
+  },
+  "colors": {
+   "All results": {
+    "Source": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "File": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Sheet": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Excel row": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Monitor Date": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Person 1": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Chest 1": [
+     "",
+     "",
+     "#ff0000",
+     "",
+     "",
+     ""
+    ],
+    "Hand 1": [
+     "#ff0000",
+     "",
+     "",
+     "#ff0000",
+     "",
+     ""
+    ],
+    "Person 2": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Chest 1 (2)": [
+     "",
+     "",
+     "",
+     "",
+     "",
+     ""
+    ],
+    "Hand 1 (2)": [
+     "",
+     "#0000ff",
+     "",
+     "",
+     "",
+     ""
+    ]
+   },
+   "EM": {
+    "File": [
+     "",
+     "",
+     ""
+    ],
+    "Sheet": [
+     "",
+     "",
+     ""
+    ],
+    "Excel row": [
+     "",
+     "",
+     ""
+    ],
+    "Monitor Date": [
+     "",
+     "",
+     ""
+    ],
+    "Person 1": [
+     "",
+     "",
+     ""
+    ],
+    "Chest 1": [
+     "",
+     "",
+     "#ff0000"
+    ],
+    "Hand 1": [
+     "#ff0000",
+     "",
+     ""
+    ],
+    "Person 2": [
+     "",
+     "",
+     ""
+    ],
+    "Chest 1 (2)": [
+     "",
+     "",
+     ""
+    ],
+    "Hand 1 (2)": [
+     "",
+     "#0000ff",
+     ""
+    ]
+   },
+   "EM2": {
+    "File": [
+     "",
+     "",
+     ""
+    ],
+    "Sheet": [
+     "",
+     "",
+     ""
+    ],
+    "Excel row": [
+     "",
+     "",
+     ""
+    ],
+    "Hand 1": [
+     "#ff0000",
+     "",
+     ""
+    ],
+    "Person 2": [
+     "",
+     "",
+     ""
+    ]
+   }
+  },
+  "warnings": [],
+  "sources": [
+   {
+    "alias": "EM",
+    "rows": 4,
+    "matched": 3,
+    "sha256": "c5c2a91ad72452ff441c723b04552af503fa1331994fa5bd8a3708d1c3aed225"
+   },
+   {
+    "alias": "EM2",
+    "rows": 4,
+    "matched": 3,
+    "sha256": "c5c2a91ad72452ff441c723b04552af503fa1331994fa5bd8a3708d1c3aed225"
+   }
+  ],
+  "xlsx": [
+   {
+    "name": "Query",
+    "rows": [
+     [
+      "Query",
+      "Em Combined",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Description",
+      "Golden case em_combined",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Mode",
+      "Each sheet filtered on its own",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Conditions",
+      "(Any sheet › Person 1 = 'KSG' AND (Any sheet › Chest 1 <> '0' OR Any sheet › Hand 1 <> '0')) OR (Any sheet › Person 2 = 'KSG' AND (Any sheet › Chest 1 (2) <> '0' OR Any sheet › Hand 1 (2) <> '0'))",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Run at",
+      "{RUN_AT}",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Rows out: All results",
+      6,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Rows out: EM",
+      3,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Rows out: EM2",
+      3,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Source",
+      "File",
+      "Sheet",
+      "Rows",
+      "Matched",
+      "SHA-256"
+     ],
+     [
+      "EM",
+      "{DIR}/data/em.xlsx",
+      "Sheet",
+      4,
+      3,
+      "c5c2a91ad72452ff441c723b04552af503fa1331994fa5bd8a3708d1c3aed225"
+     ],
+     [
+      "EM2",
+      "{DIR}/data/em.xlsx",
+      "Sheet",
+      4,
+      3,
+      "c5c2a91ad72452ff441c723b04552af503fa1331994fa5bd8a3708d1c3aed225"
+     ]
+    ],
+    "fills": {
+     "A10": "00DDE6F0",
+     "B10": "00DDE6F0",
+     "C10": "00DDE6F0",
+     "D10": "00DDE6F0",
+     "E10": "00DDE6F0",
+     "F10": "00DDE6F0"
+    },
+    "widths": {
+     "A": 23.0,
+     "B": 80.0,
+     "C": 8.0,
+     "D": 8.0,
+     "E": 9.0,
+     "F": 66.0
+    },
+    "freeze": null,
+    "filter": null
+   },
+   {
+    "name": "All results",
+    "rows": [
+     [
+      "Source",
+      "File",
+      "Sheet",
+      "Excel row",
+      "Monitor Date",
+      "Person 1",
+      "Chest 1",
+      "Hand 1",
+      "Person 2",
+      "Chest 1 (2)",
+      "Hand 1 (2)"
+     ],
+     [
+      "EM",
+      "em.xlsx",
+      "Sheet",
+      2,
+      {
+       "d": "2026-01-05T00:00:00"
+      },
+      "KSG",
+      0,
+      2,
+      "TJH",
+      4,
+      0
+     ],
+     [
+      "EM",
+      "em.xlsx",
+      "Sheet",
+      3,
+      {
+       "d": "2026-01-06T00:00:00"
+      },
+      "ZEN",
+      5,
+      0,
+      "KSG",
+      0,
+      3
+     ],
+     [
+      "EM",
+      "em.xlsx",
+      "Sheet",
+      4,
+      {
+       "d": "2026-01-07T00:00:00"
+      },
+      "KSG",
+      "1 Micrococcus luteus",
+      0,
+      "ZEN",
+      0,
+      "TNTC"
+     ],
+     [
+      "EM2",
+      "em.xlsx",
+      "Sheet",
+      2,
+      null,
+      null,
+      null,
+      2,
+      "TJH",
+      null,
+      null
+     ],
+     [
+      "EM2",
+      "em.xlsx",
+      "Sheet",
+      3,
+      null,
+      null,
+      null,
+      0,
+      "KSG",
+      null,
+      null
+     ],
+     [
+      "EM2",
+      "em.xlsx",
+      "Sheet",
+      4,
+      null,
+      null,
+      null,
+      0,
+      "ZEN",
+      null,
+      null
+     ]
+    ],
+    "fills": {
+     "H2": "00FF0000",
+     "K3": "000000FF",
+     "G4": "00FF0000",
+     "H5": "00FF0000"
+    },
+    "widths": {
+     "A": 8.0,
+     "B": 9.0,
+     "C": 8.0,
+     "D": 11.0,
+     "E": 21.0,
+     "F": 10.0,
+     "G": 22.0,
+     "H": 8.0,
+     "I": 10.0,
+     "J": 13.0,
+     "K": 12.0
+    },
+    "freeze": "A2",
+    "filter": "A1:K7"
+   },
+   {
+    "name": "EM",
+    "rows": [
+     [
+      "File",
+      "Sheet",
+      "Excel row",
+      "Monitor Date",
+      "Person 1",
+      "Chest 1",
+      "Hand 1",
+      "Person 2",
+      "Chest 1 (2)",
+      "Hand 1 (2)"
+     ],
+     [
+      "em.xlsx",
+      "Sheet",
+      2,
+      {
+       "d": "2026-01-05T00:00:00"
+      },
+      "KSG",
+      0,
+      2,
+      "TJH",
+      4,
+      0
+     ],
+     [
+      "em.xlsx",
+      "Sheet",
+      3,
+      {
+       "d": "2026-01-06T00:00:00"
+      },
+      "ZEN",
+      5,
+      0,
+      "KSG",
+      0,
+      3
+     ],
+     [
+      "em.xlsx",
+      "Sheet",
+      4,
+      {
+       "d": "2026-01-07T00:00:00"
+      },
+      "KSG",
+      "1 Micrococcus luteus",
+      0,
+      "ZEN",
+      0,
+      "TNTC"
+     ]
+    ],
+    "fills": {
+     "G2": "00FF0000",
+     "J3": "000000FF",
+     "F4": "00FF0000"
+    },
+    "widths": {
+     "A": 9.0,
+     "B": 8.0,
+     "C": 11.0,
+     "D": 21.0,
+     "E": 10.0,
+     "F": 22.0,
+     "G": 8.0,
+     "H": 10.0,
+     "I": 13.0,
+     "J": 12.0
+    },
+    "freeze": "A2",
+    "filter": "A1:J4"
+   },
+   {
+    "name": "EM2",
+    "rows": [
+     [
+      "File",
+      "Sheet",
+      "Excel row",
+      "Hand 1",
+      "Person 2"
+     ],
+     [
+      "em.xlsx",
+      "Sheet",
+      2,
+      2,
+      "TJH"
+     ],
+     [
+      "em.xlsx",
+      "Sheet",
+      3,
+      0,
+      "KSG"
+     ],
+     [
+      "em.xlsx",
+      "Sheet",
+      4,
+      0,
+      "ZEN"
+     ]
+    ],
+    "fills": {
+     "D2": "00FF0000"
+    },
+    "widths": {
+     "A": 9.0,
+     "B": 8.0,
+     "C": 11.0,
+     "D": 8.0,
+     "E": 10.0
+    },
+    "freeze": "A2",
+    "filter": "A1:E4"
+   }
+  ]
+ },
+ {
+  "name": "em_join",
+  "query": {
+   "version": 1,
+   "name": "Em Join",
+   "description": "Golden case em_join",
+   "mode": "join",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "OR",
+    "negate": false,
+    "items": [
+     {
+      "logic": "AND",
+      "negate": false,
+      "items": [
+       {
+        "source": "*",
+        "column": "Person 1",
+        "op": "=",
+        "value": "KSG",
+        "enabled": true
+       },
+       {
+        "logic": "OR",
+        "negate": false,
+        "items": [
+         {
+          "source": "*",
+          "column": "Chest 1",
+          "op": "<>",
+          "value": "0",
+          "enabled": true,
+          "color": "#ff0000"
+         },
+         {
+          "source": "*",
+          "column": "Hand 1",
+          "op": "<>",
+          "value": "0",
+          "enabled": true,
+          "color": "#ff0000"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "logic": "AND",
+      "negate": false,
+      "items": [
+       {
+        "source": "*",
+        "column": "Person 2",
+        "op": "=",
+        "value": "KSG",
+        "enabled": true
+       },
+       {
+        "logic": "OR",
+        "negate": false,
+        "items": [
+         {
+          "source": "*",
+          "column": "Chest 1 (2)",
+          "op": "<>",
+          "value": "0",
+          "enabled": true,
+          "color": "#0000ff"
+         },
+         {
+          "source": "*",
+          "column": "Hand 1 (2)",
+          "op": "<>",
+          "value": "0",
+          "enabled": true,
+          "color": "#0000ff"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "outputs": {
+    "EM": [
+     "Monitor Date",
+     "Person 1",
+     "Chest 1",
+     "Hand 1",
+     "Person 2",
+     "Chest 1 (2)",
+     "Hand 1 (2)"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "EM",
+     "path": "data/em.xlsx",
+     "sheet": "Sheet",
+     "key": "Monitor Date"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "Joined",
+    "columns": [
+     "Key",
+     "EM Excel row",
+     "EM.Monitor Date",
+     "EM.Person 1",
+     "EM.Chest 1",
+     "EM.Hand 1",
+     "EM.Person 2",
+     "EM.Chest 1 (2)",
+     "EM.Hand 1 (2)"
+    ],
+    "cells": {
+     "Key": [
+      {
+       "d": "2026-01-05T00:00:00"
+      },
+      {
+       "d": "2026-01-06T00:00:00"
+      },
+      {
+       "d": "2026-01-07T00:00:00"
+      }
+     ],
+     "EM Excel row": [
+      2,
+      3,
+      4
+     ],
+     "EM.Monitor Date": [
+      {
+       "d": "2026-01-05T00:00:00"
+      },
+      {
+       "d": "2026-01-06T00:00:00"
+      },
+      {
+       "d": "2026-01-07T00:00:00"
+      }
+     ],
+     "EM.Person 1": [
+      "KSG",
+      "ZEN",
+      "KSG"
+     ],
+     "EM.Chest 1": [
+      0,
+      5,
+      "1 Micrococcus luteus"
+     ],
+     "EM.Hand 1": [
+      2,
+      0,
+      0
+     ],
+     "EM.Person 2": [
+      "TJH",
+      "KSG",
+      "ZEN"
+     ],
+     "EM.Chest 1 (2)": [
+      4,
+      0,
+      0
+     ],
+     "EM.Hand 1 (2)": [
+      0,
+      3,
+      "TNTC"
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "Joined": {
+    "Key": [
+     false,
+     false,
+     false
+    ],
+    "EM Excel row": [
+     false,
+     false,
+     false
+    ],
+    "EM.Monitor Date": [
+     false,
+     false,
+     false
+    ],
+    "EM.Person 1": [
+     true,
+     false,
+     true
+    ],
+    "EM.Chest 1": [
+     false,
+     false,
+     true
+    ],
+    "EM.Hand 1": [
+     true,
+     false,
+     false
+    ],
+    "EM.Person 2": [
+     false,
+     true,
+     false
+    ],
+    "EM.Chest 1 (2)": [
+     false,
+     false,
+     false
+    ],
+    "EM.Hand 1 (2)": [
+     false,
+     true,
+     false
+    ]
+   }
+  },
+  "colors": {
+   "Joined": {
+    "Key": [
+     "",
+     "",
+     ""
+    ],
+    "EM Excel row": [
+     "",
+     "",
+     ""
+    ],
+    "EM.Monitor Date": [
+     "",
+     "",
+     ""
+    ],
+    "EM.Person 1": [
+     "",
+     "",
+     ""
+    ],
+    "EM.Chest 1": [
+     "",
+     "",
+     "#ff0000"
+    ],
+    "EM.Hand 1": [
+     "#ff0000",
+     "",
+     ""
+    ],
+    "EM.Person 2": [
+     "",
+     "",
+     ""
+    ],
+    "EM.Chest 1 (2)": [
+     "",
+     "",
+     ""
+    ],
+    "EM.Hand 1 (2)": [
+     "",
+     "#0000ff",
+     ""
+    ]
+   }
+  },
+  "warnings": [],
+  "sources": [
+   {
+    "alias": "EM",
+    "rows": 4,
+    "matched": 3,
+    "sha256": "c5c2a91ad72452ff441c723b04552af503fa1331994fa5bd8a3708d1c3aed225"
+   }
+  ]
+ },
+ {
+  "name": "em_not",
+  "query": {
+   "version": 1,
+   "name": "Em Not",
+   "description": "Golden case em_not",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": [
+     {
+      "logic": "OR",
+      "negate": true,
+      "items": [
+       {
+        "source": "*",
+        "column": "Hand 1",
+        "op": "<>",
+        "value": "0",
+        "enabled": true,
+        "color": "#00ff00"
+       }
+      ]
+     },
+     {
+      "source": "*",
+      "column": "Person 1",
+      "op": "=",
+      "value": "KSG",
+      "enabled": true,
+      "color": "#ffd54f"
+     }
+    ]
+   },
+   "outputs": {
+    "EM": [
+     "Monitor Date",
+     "Person 1",
+     "Chest 1",
+     "Hand 1",
+     "Person 2",
+     "Chest 1 (2)",
+     "Hand 1 (2)"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "EM",
+     "path": "data/em.xlsx",
+     "sheet": "Sheet",
+     "key": "Monitor Date"
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "EM",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Monitor Date",
+     "Person 1",
+     "Chest 1",
+     "Hand 1",
+     "Person 2",
+     "Chest 1 (2)",
+     "Hand 1 (2)"
+    ],
+    "cells": {
+     "File": [
+      "em.xlsx"
+     ],
+     "Sheet": [
+      "Sheet"
+     ],
+     "Excel row": [
+      4
+     ],
+     "Monitor Date": [
+      {
+       "d": "2026-01-07T00:00:00"
+      }
+     ],
+     "Person 1": [
+      "KSG"
+     ],
+     "Chest 1": [
+      "1 Micrococcus luteus"
+     ],
+     "Hand 1": [
+      0
+     ],
+     "Person 2": [
+      "ZEN"
+     ],
+     "Chest 1 (2)": [
+      0
+     ],
+     "Hand 1 (2)": [
+      "TNTC"
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "EM": {
+    "File": [
+     false
+    ],
+    "Sheet": [
+     false
+    ],
+    "Excel row": [
+     false
+    ],
+    "Monitor Date": [
+     false
+    ],
+    "Person 1": [
+     true
+    ],
+    "Chest 1": [
+     false
+    ],
+    "Hand 1": [
+     false
+    ],
+    "Person 2": [
+     false
+    ],
+    "Chest 1 (2)": [
+     false
+    ],
+    "Hand 1 (2)": [
+     false
+    ]
+   }
+  },
+  "colors": {
+   "EM": {
+    "File": [
+     ""
+    ],
+    "Sheet": [
+     ""
+    ],
+    "Excel row": [
+     ""
+    ],
+    "Monitor Date": [
+     ""
+    ],
+    "Person 1": [
+     "#ffd54f"
+    ],
+    "Chest 1": [
+     ""
+    ],
+    "Hand 1": [
+     ""
+    ],
+    "Person 2": [
+     ""
+    ],
+    "Chest 1 (2)": [
+     ""
+    ],
+    "Hand 1 (2)": [
+     ""
+    ]
+   }
+  },
+  "warnings": [],
+  "sources": [
+   {
+    "alias": "EM",
+    "rows": 4,
+    "matched": 1,
+    "sha256": "c5c2a91ad72452ff441c723b04552af503fa1331994fa5bd8a3708d1c3aed225"
+   }
+  ]
+ },
+ {
+  "name": "tabbed",
+  "query": {
+   "version": 1,
+   "name": "Tabbed",
+   "description": "Golden case tabbed",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": [
+     {
+      "source": "D",
+      "column": "Date Processed",
+      "op": ">",
+      "value": "2024-01-01",
+      "enabled": true
+     },
+     {
+      "source": "D",
+      "column": "Rate",
+      "op": "<",
+      "value": "10%",
+      "enabled": true
+     }
+    ]
+   },
+   "outputs": {
+    "D": [
+     "Lot",
+     "Date Processed",
+     "Rate"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "D",
+     "path": "data/tabbed.xlsx",
+     "sheet": "Data",
+     "key": ""
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "D",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Lot",
+     "Date Processed",
+     "Rate"
+    ],
+    "cells": {
+     "File": [
+      "tabbed.xlsx"
+     ],
+     "Sheet": [
+      "Data"
+     ],
+     "Excel row": [
+      3
+     ],
+     "Lot": [
+      "Q2"
+     ],
+     "Date Processed": [
+      45293.0
+     ],
+     "Rate": [
+      "7%"
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "D": {
+    "File": [
+     false
+    ],
+    "Sheet": [
+     false
+    ],
+    "Excel row": [
+     false
+    ],
+    "Lot": [
+     false
+    ],
+    "Date Processed": [
+     true
+    ],
+    "Rate": [
+     true
+    ]
+   }
+  },
+  "colors": {
+   "D": {
+    "File": [
+     ""
+    ],
+    "Sheet": [
+     ""
+    ],
+    "Excel row": [
+     ""
+    ],
+    "Lot": [
+     ""
+    ],
+    "Date Processed": [
+     ""
+    ],
+    "Rate": [
+     ""
+    ]
+   }
+  },
+  "warnings": [],
+  "sources": [
+   {
+    "alias": "D",
+    "rows": 2,
+    "matched": 1,
+    "sha256": "78b1f8509de176ac232d370918f09d5601b55232f6be0466f24c338f14ccae73"
+   }
+  ]
+ },
+ {
+  "name": "missing_file",
+  "query": {
+   "version": 1,
+   "name": "Missing File",
+   "description": "Golden case missing_file",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": []
+   },
+   "outputs": {
+    "X": [
+     "a"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "X",
+     "path": "data/missing.xlsx",
+     "sheet": "S",
+     "key": ""
+    }
+   ]
+  },
+  "error": "X: File not found: {DIR}/data/missing.xlsx"
+ },
+ {
+  "name": "missing_sheet",
+  "query": {
+   "version": 1,
+   "name": "Missing Sheet",
+   "description": "Golden case missing_sheet",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "AND",
+    "negate": false,
+    "items": []
+   },
+   "outputs": {
+    "L": [
+     "Lot"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "L",
+     "path": "data/lots.xlsx",
+     "sheet": "Nope",
+     "key": "Lot"
+    }
+   ]
+  },
+  "error": "L: Sheet 'Nope' not found. Available: Lots, Owners"
+ },
+ {
+  "name": "csv_edge",
+  "query": {
+   "version": 1,
+   "name": "Csv Edge",
+   "description": "Golden case csv_edge",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "OR",
+    "negate": false,
+    "items": [
+     {
+      "source": "*",
+      "column": "Count",
+      "op": ">=",
+      "value": "1",
+      "enabled": true
+     },
+     {
+      "source": "D",
+      "column": "Value",
+      "op": "in",
+      "value": "2, 3",
+      "enabled": true
+     }
+    ]
+   },
+   "outputs": {
+    "E": [
+     "Name",
+     "Count",
+     "Ratio",
+     "Flag",
+     "Note"
+    ],
+    "D": [
+     "Lot",
+     "Value"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "E",
+     "path": "data/edge.csv",
+     "sheet": "edge",
+     "key": ""
+    },
+    {
+     "alias": "D",
+     "path": "data/data.csv",
+     "sheet": "data",
+     "key": ""
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "All results",
+    "columns": [
+     "Source",
+     "File",
+     "Sheet",
+     "Excel row",
+     "Name",
+     "Count",
+     "Ratio",
+     "Flag",
+     "Note",
+     "Lot",
+     "Value"
+    ],
+    "cells": {
+     "Source": [
+      "E",
+      "E",
+      "D"
+     ],
+     "File": [
+      "edge.csv",
+      "edge.csv",
+      "data.csv"
+     ],
+     "Sheet": [
+      "edge",
+      "edge",
+      "data"
+     ],
+     "Excel row": [
+      2,
+      5,
+      3
+     ],
+     "Name": [
+      "A",
+      "C",
+      null
+     ],
+     "Count": [
+      1.0,
+      3.0,
+      null
+     ],
+     "Ratio": [
+      0.5,
+      null,
+      null
+     ],
+     "Flag": [
+      true,
+      true,
+      null
+     ],
+     "Note": [
+      "x",
+      null,
+      null
+     ],
+     "Lot": [
+      null,
+      null,
+      "B"
+     ],
+     "Value": [
+      null,
+      null,
+      2.0
+     ]
+    }
+   },
+   {
+    "name": "E",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Name",
+     "Count",
+     "Ratio",
+     "Flag",
+     "Note"
+    ],
+    "cells": {
+     "File": [
+      "edge.csv",
+      "edge.csv"
+     ],
+     "Sheet": [
+      "edge",
+      "edge"
+     ],
+     "Excel row": [
+      2,
+      5
+     ],
+     "Name": [
+      "A",
+      "C"
+     ],
+     "Count": [
+      1.0,
+      3.0
+     ],
+     "Ratio": [
+      0.5,
+      null
+     ],
+     "Flag": [
+      true,
+      true
+     ],
+     "Note": [
+      "x",
+      null
+     ]
+    }
+   },
+   {
+    "name": "D",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Lot",
+     "Value"
+    ],
+    "cells": {
+     "File": [
+      "data.csv"
+     ],
+     "Sheet": [
+      "data"
+     ],
+     "Excel row": [
+      3
+     ],
+     "Lot": [
+      "B"
+     ],
+     "Value": [
+      2
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "All results": {
+    "Source": [
+     false,
+     false,
+     false
+    ],
+    "File": [
+     false,
+     false,
+     false
+    ],
+    "Sheet": [
+     false,
+     false,
+     false
+    ],
+    "Excel row": [
+     false,
+     false,
+     false
+    ],
+    "Name": [
+     false,
+     false,
+     false
+    ],
+    "Count": [
+     true,
+     true,
+     false
+    ],
+    "Ratio": [
+     false,
+     false,
+     false
+    ],
+    "Flag": [
+     false,
+     false,
+     false
+    ],
+    "Note": [
+     false,
+     false,
+     false
+    ],
+    "Lot": [
+     false,
+     false,
+     false
+    ],
+    "Value": [
+     false,
+     false,
+     true
+    ]
+   },
+   "E": {
+    "File": [
+     false,
+     false
+    ],
+    "Sheet": [
+     false,
+     false
+    ],
+    "Excel row": [
+     false,
+     false
+    ],
+    "Name": [
+     false,
+     false
+    ],
+    "Count": [
+     true,
+     true
+    ],
+    "Ratio": [
+     false,
+     false
+    ],
+    "Flag": [
+     false,
+     false
+    ],
+    "Note": [
+     false,
+     false
+    ]
+   },
+   "D": {
+    "File": [
+     false
+    ],
+    "Sheet": [
+     false
+    ],
+    "Excel row": [
+     false
+    ],
+    "Lot": [
+     false
+    ],
+    "Value": [
+     true
+    ]
+   }
+  },
+  "colors": {
+   "All results": {
+    "Source": [
+     "",
+     "",
+     ""
+    ],
+    "File": [
+     "",
+     "",
+     ""
+    ],
+    "Sheet": [
+     "",
+     "",
+     ""
+    ],
+    "Excel row": [
+     "",
+     "",
+     ""
+    ],
+    "Name": [
+     "",
+     "",
+     ""
+    ],
+    "Count": [
+     "",
+     "",
+     ""
+    ],
+    "Ratio": [
+     "",
+     "",
+     ""
+    ],
+    "Flag": [
+     "",
+     "",
+     ""
+    ],
+    "Note": [
+     "",
+     "",
+     ""
+    ],
+    "Lot": [
+     "",
+     "",
+     ""
+    ],
+    "Value": [
+     "",
+     "",
+     ""
+    ]
+   },
+   "E": {
+    "File": [
+     "",
+     ""
+    ],
+    "Sheet": [
+     "",
+     ""
+    ],
+    "Excel row": [
+     "",
+     ""
+    ],
+    "Name": [
+     "",
+     ""
+    ],
+    "Count": [
+     "",
+     ""
+    ],
+    "Ratio": [
+     "",
+     ""
+    ],
+    "Flag": [
+     "",
+     ""
+    ],
+    "Note": [
+     "",
+     ""
+    ]
+   },
+   "D": {
+    "File": [
+     ""
+    ],
+    "Sheet": [
+     ""
+    ],
+    "Excel row": [
+     ""
+    ],
+    "Lot": [
+     ""
+    ],
+    "Value": [
+     ""
+    ]
+   }
+  },
+  "warnings": [],
+  "sources": [
+   {
+    "alias": "E",
+    "rows": 3,
+    "matched": 2,
+    "sha256": "953132beb813ac55c38c678a9874a9ace9460f8bc572b0bda3989ca954ddacd7"
+   },
+   {
+    "alias": "D",
+    "rows": 2,
+    "matched": 1,
+    "sha256": "1aea5a73cc77b8a8b4a4500383af5fec423eb4b29554cf7260ed99dda1485370"
+   }
+  ]
+ },
+ {
+  "name": "edge_types",
+  "query": {
+   "version": 1,
+   "name": "Edge Types",
+   "description": "Golden case edge_types",
+   "mode": "independent",
+   "join_how": "inner",
+   "include_provenance": true,
+   "where": {
+    "logic": "OR",
+    "negate": false,
+    "items": [
+     {
+      "source": "T",
+      "column": "Mixed",
+      "op": "contains",
+      "value": "1",
+      "enabled": true
+     },
+     {
+      "source": "T",
+      "column": "When",
+      "op": ">",
+      "value": "2024-01-06",
+      "enabled": true
+     },
+     {
+      "source": "T",
+      "column": "Float",
+      "op": "contains",
+      "value": "e+16",
+      "enabled": true
+     }
+    ]
+   },
+   "outputs": {
+    "T": [
+     "Int",
+     "IntBlank",
+     "Float",
+     "Bool",
+     "When",
+     "Text",
+     "Mixed",
+     "NumText"
+    ]
+   },
+   "sources": [
+    {
+     "alias": "T",
+     "path": "data/edge.xlsx",
+     "sheet": "Types",
+     "key": ""
+    }
+   ]
+  },
+  "tables": [
+   {
+    "name": "T",
+    "columns": [
+     "File",
+     "Sheet",
+     "Excel row",
+     "Int",
+     "IntBlank",
+     "Float",
+     "Bool",
+     "When",
+     "Text",
+     "Mixed",
+     "NumText"
+    ],
+    "cells": {
+     "File": [
+      "edge.xlsx",
+      "edge.xlsx",
+      "edge.xlsx"
+     ],
+     "Sheet": [
+      "Types",
+      "Types",
+      "Types"
+     ],
+     "Excel row": [
+      3,
+      5,
+      6
+     ],
+     "Int": [
+      2,
+      3,
+      4
+     ],
+     "IntBlank": [
+      null,
+      3.0,
+      null
+     ],
+     "Float": [
+      2.0,
+      null,
+      1e+16
+     ],
+     "Bool": [
+      false,
+      true,
+      false
+     ],
+     "When": [
+      {
+       "d": "2024-01-06T13:30:00"
+      },
+      {
+       "d": "2024-02-01T00:00:00"
+      },
+      null
+     ],
+     "Text": [
+      null,
+      "ok",
+      null
+     ],
+     "Mixed": [
+      1,
+      2.5,
+      true
+     ],
+     "NumText": [
+      "2",
+      "3",
+      "4"
+     ]
+    }
+   }
+  ],
+  "hits": {
+   "T": {
+    "File": [
+     false,
+     false,
+     false
+    ],
+    "Sheet": [
+     false,
+     false,
+     false
+    ],
+    "Excel row": [
+     false,
+     false,
+     false
+    ],
+    "Int": [
+     false,
+     false,
+     false
+    ],
+    "IntBlank": [
+     false,
+     false,
+     false
+    ],
+    "Float": [
+     false,
+     false,
+     true
+    ],
+    "Bool": [
+     false,
+     false,
+     false
+    ],
+    "When": [
+     true,
+     true,
+     false
+    ],
+    "Text": [
+     false,
+     false,
+     false
+    ],
+    "Mixed": [
+     true,
+     false,
+     false
+    ],
+    "NumText": [
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "colors": {
+   "T": {
+    "File": [
+     "",
+     "",
+     ""
+    ],
+    "Sheet": [
+     "",
+     "",
+     ""
+    ],
+    "Excel row": [
+     "",
+     "",
+     ""
+    ],
+    "Int": [
+     "",
+     "",
+     ""
+    ],
+    "IntBlank": [
+     "",
+     "",
+     ""
+    ],
+    "Float": [
+     "",
+     "",
+     ""
+    ],
+    "Bool": [
+     "",
+     "",
+     ""
+    ],
+    "When": [
+     "",
+     "",
+     ""
+    ],
+    "Text": [
+     "",
+     "",
+     ""
+    ],
+    "Mixed": [
+     "",
+     "",
+     ""
+    ],
+    "NumText": [
+     "",
+     "",
+     ""
+    ]
+   }
+  },
+  "warnings": [],
+  "sources": [
+   {
+    "alias": "T",
+    "rows": 4,
+    "matched": 3,
+    "sha256": "727bde7949c2ed18168942398105020af24bf5998bff6bfdebeab56befaf9dfc"
+   }
+  ],
+  "xlsx": [
+   {
+    "name": "Query",
+    "rows": [
+     [
+      "Query",
+      "Edge Types",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Description",
+      "Golden case edge_types",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Mode",
+      "Each sheet filtered on its own",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Conditions",
+      "T › Mixed contains '1' OR T › When > '2024-01-06' OR T › Float contains 'e+16'",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Run at",
+      "{RUN_AT}",
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Rows out: T",
+      3,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      "Source",
+      "File",
+      "Sheet",
+      "Rows",
+      "Matched",
+      "SHA-256"
+     ],
+     [
+      "T",
+      "{DIR}/data/edge.xlsx",
+      "Types",
+      4,
+      3,
+      "727bde7949c2ed18168942398105020af24bf5998bff6bfdebeab56befaf9dfc"
+     ]
+    ],
+    "fills": {
+     "A8": "00DDE6F0",
+     "B8": "00DDE6F0",
+     "C8": "00DDE6F0",
+     "D8": "00DDE6F0",
+     "E8": "00DDE6F0",
+     "F8": "00DDE6F0"
+    },
+    "widths": {
+     "A": 13.0,
+     "B": 80.0,
+     "C": 8.0,
+     "D": 8.0,
+     "E": 9.0,
+     "F": 66.0
+    },
+    "freeze": null,
+    "filter": null
+   },
+   {
+    "name": "T",
+    "rows": [
+     [
+      "File",
+      "Sheet",
+      "Excel row",
+      "Int",
+      "IntBlank",
+      "Float",
+      "Bool",
+      "When",
+      "Text",
+      "Mixed",
+      "NumText"
+     ],
+     [
+      "edge.xlsx",
+      "Types",
+      3,
+      2,
+      null,
+      2,
+      false,
+      {
+       "d": "2024-01-06T13:30:00"
+      },
+      null,
+      1,
+      "2"
+     ],
+     [
+      "edge.xlsx",
+      "Types",
+      5,
+      3,
+      3,
+      null,
+      true,
+      {
+       "d": "2024-02-01T00:00:00"
+      },
+      "ok",
+      2.5,
+      "3"
+     ],
+     [
+      "edge.xlsx",
+      "Types",
+      6,
+      4,
+      null,
+      1e+16,
+      false,
+      null,
+      null,
+      true,
+      "4"
+     ]
+    ],
+    "fills": {},
+    "widths": {
+     "A": 11.0,
+     "B": 8.0,
+     "C": 11.0,
+     "D": 8.0,
+     "E": 10.0,
+     "F": 8.0,
+     "G": 8.0,
+     "H": 21.0,
+     "I": 8.0,
+     "J": 8.0,
+     "K": 9.0
+    },
+    "freeze": "A2",
+    "filter": "A1:K4"
+   }
+  ]
+ }
+]

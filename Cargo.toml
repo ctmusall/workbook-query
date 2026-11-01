@@ -1,0 +1,52 @@
+[workspace]
+resolver = "3"
+members = ["crates/wbquery-core", "crates/wbquery-charts", "crates/wbquery-cli", "crates/wbquery-gui"]
+
+[workspace.package]
+version = "0.6.0"
+edition = "2024"
+rust-version = "1.95"
+description = "Query rows across many Excel workbooks and sheets with AND/OR conditions and export the matches"
+
+[workspace.dependencies]
+wbquery-core = { path = "crates/wbquery-core" }
+wbquery-charts = { path = "crates/wbquery-charts" }
+wbquery-cli = { path = "crates/wbquery-cli" }
+anyhow = "1"
+assert_cmd = "2"
+caseless = "0.2"
+calamine = { version = "0.37", features = ["chrono"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+clap = { version = "4", features = ["derive"] }
+csv = "1"
+eframe = { version = "0.37", default-features = false, features = ["accesskit", "clipboard", "default_fonts", "links", "wayland", "wgpu", "x11"] }
+egui = "0.37"
+egui_extras = { version = "0.37", default-features = false }
+egui_plot = "0.38"
+egui_kittest = { version = "0.37", features = ["wgpu", "snapshot"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+epaint_default_fonts = "0.37"
+regex = "1"
+# resvg and svg2pdf must share one usvg version (svg2pdf 0.13 uses usvg 0.45).
+resvg = { version = "0.45", default-features = false, features = ["text"] }
+rfd = "0.17"
+rust_xlsxwriter = { version = "0.102", features = ["chrono"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+sha2 = "0.10"
+svg2pdf = { version = "0.13", default-features = false, features = ["text"] }
+tempfile = "3"
+thiserror = "2"
+ttf-parser = "0.25"
+winresource = "0.1"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

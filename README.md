@@ -39,12 +39,13 @@ Fully blank rows are skipped. Each row keeps its **Excel row number** so you can
 
 ## Using the app
 
-1. **Add workbooks…** For a workbook with several sheets, tick the sheets you want. Each sheet gets a name such as `lots/Lots`; double-click a name to rename it.
+1. **Add workbooks…** For a workbook with several sheets, tick the sheets you want. Each sheet gets a name such as `lots/Lots`; edit a name in its box to rename it. You can also drop workbooks (or a saved query) onto the window.
 2. **How sheets combine:** choose *Filter each sheet on its own* or *Join sheets on a key column*. In join mode, pick each sheet's **Join key** column and a join type:
    - **inner:** keys found in every sheet;
    - **left:** every row of the first sheet;
    - **outer:** every key from any sheet.
 3. **Conditions:**
+   - Click anywhere on a condition or group row (its boxes included) to select it.
    - *Add condition* adds to the selected group. It copies the selected condition's sheet and column. With nothing selected and several sheets loaded, it starts on *Any sheet*.
    - **Any sheet** conditions test every sheet that has the column. A sheet without it skips that condition. A sheet that has none of the columns your conditions test matches no rows, and the status line names it.
    - *Add for column…* lists the columns that more than one sheet has. Tick as many as you like and set the operator and value they all get. You can leave the value blank to fill it in later; the Value box suggests values from the ticked columns.
@@ -54,17 +55,19 @@ Fully blank rows are skipped. Each row keeps its **Excel row number** so you can
    - Type in the *Column* box to search it. The *Value* box suggests values that are actually in that column. Press Enter in it to run the query.
    - *Duplicate* (Ctrl+D) copies the selected condition or group. *Remove* (or Delete) deletes it.
    - After a run, right-click a cell in a result table to add a condition `= that value` (or `<>`, or *is blank*).
-   - *Add group* nests a new AND/OR group.
+   - *Add group* nests a new AND/OR group. *Up* / *Down* move the selected item within its group; *Out* moves it out of its group, and *In* moves it into the group just above it.
    - Set each group's *Match* to AND (all items must match) or OR (any item may match). Tick *NOT* to invert a group.
    - Untick *On* to switch a condition, or a whole group, off without deleting it. Everything inside a switched-off group is greyed out and left out of the query.
-   - Give a group a name in its *Name / Column* box. The name shows in the *Where:* line and in exported reports as `[name] (…)`.
+   - Give a group a name in its *group name* box. The name shows in the *Where:* line and in exported reports as `[name] (…)`.
    - Collapse a group with its arrow to tidy the tree. While it's collapsed, its row shows one *Operator* and *Value* for every condition inside, when they all share the same ones. Editing those changes all of them at once. If they differ, the row says so; expand the group to edit them one by one. Collapsed groups stay collapsed when you save and reload a query.
    - **Highlight color:** click a condition's *Color* swatch to pick a color; right-click it for *No color*. After a run, the cells that condition counted for are filled with its color in the result tables and in both exports. A cell counts only when its condition is true *and* every group above it is true for that row. So in `(Person 1 = KSG AND Chest 1 <> 0) OR (Person 2 = KSG AND …)`, Chest 1 is colored only on rows where Person 1 is KSG. Conditions inside a *NOT* group never color cells. When several colored conditions count for a cell, the first one in the tree wins. A group's swatch colors every condition inside it. *Add for column…* can give all its conditions one color.
    - The *Where:* line shows the whole query in words.
    - Column pick lists are alphabetical, with numbers in order (`P2` before `P10`). Each sheet's output list keeps the output order instead.
 4. **Output columns:** tick the columns you want from each sheet, and drag to reorder them. **Choose for all sheets…** lists every column once. Ticking or unticking one applies to every sheet that has it. A half-ticked column is ticked in some sheets only, and is left as it is unless you change it.
+Each section of the left pane folds away under its heading, and the pane's ◀ button hides it altogether (▶ brings it back), giving the results the whole window.
+
 5. **Run query**, then **Export Excel…** or **Export HTML…**. **Save query…** stores everything above as JSON.
-6. **Visualize** (or the *Visualize* tab) charts a result table. Choose the table, the chart type and its columns; the chart redraws as you change them. Use the toolbar to zoom and pan, and **Save chart…** for a PNG, SVG or PDF.
+6. **Visualize** (or the *Visualize* tab) charts a result table. Choose the table, the chart type and its columns; the chart redraws as you change them. Scroll to zoom, drag to pan and double-click to reset; **Save chart…** writes a PNG, SVG or PDF.
 
 ### Chart types
 
@@ -147,25 +150,64 @@ wbquery-cli -q query.json --source R=new.xlsx      # run a saved query against a
 wbquery-cli -q query.json --formats html --print   # HTML only, and print the tables
 ```
 
-Running `python -m wbquery` (or `wbquery.exe`) with no options opens the app. Any file paths you pass are opened, and `.json` files are loaded as queries. Passing any `-option` runs the CLI instead.
+Running `wbquery` (`wbquery.exe`) with no options opens the app. Any file paths you pass are opened, and `.json` files are loaded as queries. Passing any `-option` runs the CLI instead.
 
 ## Development
 
+Workbook Query is written in Rust (a Cargo workspace in `crates/`):
+
+| Crate | What it is |
+|---|---|
+| `wbquery-core` | loading sheets, conditions, independent / join queries, Excel and HTML export |
+| `wbquery-charts` | the nine chart types: what to plot (series, bars, limits, notes), drawn to SVG, PNG (resvg) or PDF (svg2pdf) |
+| `wbquery-cli` | `wbquery-cli` |
+| `wbquery-gui` | `wbquery`, the desktop app (egui); started with options, it runs the command line |
+
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -e '.[dev]'
-QT_QPA_PLATFORM=offscreen .venv/bin/pytest --cov=wbquery
-.venv/bin/python -m wbquery              # run the app
+cargo test --workspace                       # all tests
+cargo run -p wbquery-gui                     # run the app (cargo run -p wbquery-gui -- book.xlsx opens a workbook)
+cargo run -p wbquery-cli -- -q query.json    # run the command line
+just ci                                      # everything CI checks: fmt, clippy, cargo-deny, tests, smoke test
 ```
+
+The toolchain version is pinned in `rust-toolchain.toml`; `rustup` installs it on first use. On Linux,
+`cargo` needs a C compiler (`gcc`) for a few dependencies; nothing else.
+
+**Tests.**
+
+- `crates/wbquery-core/tests/golden.rs` and `crates/wbquery-charts/tests/golden.rs` check against results recorded
+  from the original Python version (0.5) in `tests/golden/`: loading, every operator on many kinds of columns,
+  query results with highlight colors, the HTML report, the Excel layout, and what 46 charts plot. The scripts
+  that recorded them are in the git history (`tests/golden/generate*.py`).
+- `crates/wbquery-gui/tests/state.rs` drives the window's logic; `tests/ui.rs` clicks the real window headless
+  with egui_kittest. `WBQ_UI_DIR=some/dir cargo test -p wbquery-gui --test ui` also saves screenshots (needs a GPU
+  or a software Vulkan / GL driver).
+- `just charts` saves every fixture chart as SVG, PNG and PDF in `target/charts/` to look at.
 
 ## Building executables
 
 | Where | How |
 |---|---|
-| Linux | `./build.sh` → `dist/wbquery`, `dist/wbquery-cli` |
-| Windows | `powershell -ExecutionPolicy Bypass -File build.ps1` → `dist\wbquery.exe`, `dist\wbquery-cli.exe` |
-| GitHub Actions | Every push runs the tests and builds both platforms. On `main`, a release `v<version>` is published (version from `wbquery/__init__.py`; bump it there and in `pyproject.toml`) |
+| Anywhere | `cargo build --release` → `target/release/wbquery` and `wbquery-cli` (`.exe` on Windows) |
+| GitHub Actions | Every push runs the checks and tests and builds Windows and Linux executables. On `main`, a release `v<version>` is published (version from `Cargo.toml`, `[workspace.package]`) |
 
-PyInstaller can't cross-compile, so each platform's executables are built on that platform. The build scripts run the test suite first.
+Each platform's executables are built on that platform. The Windows build embeds `assets/icon.ico`; the app's
+window icon is `assets/icon.png`. Charts and the app use the Ubuntu Light font, built in (licence in `licenses/`).
 
-The app icon (`wbquery/assets/icon.png` and `icon.ico`) is drawn by `scripts/make_icon.py`; rerun it after changing the design.
+## Changes from 0.5 (the Python version)
+
+0.6 is a rewrite in Rust with the same features, giving the same results on the same data. The executables are
+much smaller (about 25 MB for the app instead of ~150 MB) and start and run faster. Differences:
+
+- `.xls` files open (the Python version needed `xlrd`, which wasn't installed).
+- CSV headers that are blank or repeated are named like Excel headers (`Column 3`, `Name (2)`), not
+  `Unnamed: 2` / `Name.1`.
+- Dates in conditions and cells must be written out (`2024-01-05`, `1/5/2024`, `Jan 5, 2024`, with an optional
+  time); words such as `today` and dates without a year aren't read as dates.
+- A blank cell in a date column never matches a numeric condition (the Python version matched it with `<>` and
+  `<`).
+- `wbquery-cli --print` lays the tables out in its own format.
+- Charts zoom and pan with the mouse instead of matplotlib's toolbar. They plot the same data, but axes are laid
+  out differently: tick spacing differs a little, and large numbers read `20M` rather than `2` with a `1e7` offset.
+- Conditions: *Out* / *In* move items out of and into groups; selecting a row works from any of its boxes.
+- The left pane's sections fold away, and the pane can be hidden.

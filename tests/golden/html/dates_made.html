@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dates Made</title><style>
+:root { --bg:#fff; --fg:#1d232b; --muted:#5b6672; --line:#d6dce3; --head:#eef2f6; --stripe:#f7f9fb; --warn:#8a5a00; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#16191d; --fg:#e4e8ec; --muted:#9aa5b1; --line:#323940; --head:#222830; --stripe:#1b1f24; --warn:#e0b050; }
+}
+body { background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+       margin:0 auto; padding:24px 16px; max-width:1400px; }
+h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:17px; margin:28px 0 8px; }
+.muted { color:var(--muted); } .warn { color:var(--warn); }
+.scroll { overflow-x:auto; border:1px solid var(--line); border-radius:6px; }
+table { border-collapse:collapse; width:100%; font-variant-numeric:tabular-nums; }
+th, td { padding:5px 10px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
+th { background:var(--head); position:sticky; top:0; }
+tbody tr:nth-child(even) td { background:var(--stripe); }
+table.kv th { width:12em; white-space:normal; } table.kv td { white-space:pre-line; }
+code { font-size:12px; }
+</style></head>
+<body>
+<h1>Dates Made</h1>
+<p class="muted">Workbook Query {VERSION}</p>
+<div class="scroll"><table class="kv"><tbody><tr><th>Query</th><td>Dates Made</td></tr><tr><th>Description</th><td>Golden case dates_made</td></tr><tr><th>Mode</th><td>Each sheet filtered on its own</td></tr><tr><th>Conditions</th><td>L › Made &gt;= &#x27;2024-03-01&#x27; AND L › Made &lt; &#x27;03/15/2024&#x27;</td></tr><tr><th>Run at</th><td>{RUN_AT}</td></tr><tr><th>Rows out: L</th><td>1</td></tr></tbody></table></div>
+
+<h2>L <span class="muted">(1 row)</span></h2><div class="scroll"><table><thead><tr><th>File</th><th>Sheet</th><th>Excel row</th><th>Lot</th><th>Made</th><th>Notes</th></tr></thead><tbody>
+<tr><td>lots.xlsx</td><td>Lots</td><td>4</td><td>A3</td><td>2024-03-01</td><td>ok</td></tr>
+</tbody></table></div>
+<h2>Sources</h2>
+<div class="scroll"><table><thead><tr><th>Source</th><th>File</th><th>Sheet</th><th>Rows</th><th>Matched</th><th>SHA-256</th></tr></thead><tbody><tr><td>L</td><td>{DIR}/data/lots.xlsx</td><td>Lots</td><td>5</td><td>1</td><td><code>ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134</code></td></tr></tbody></table></div>
+</body></html>

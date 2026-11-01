@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Join Left</title><style>
+:root { --bg:#fff; --fg:#1d232b; --muted:#5b6672; --line:#d6dce3; --head:#eef2f6; --stripe:#f7f9fb; --warn:#8a5a00; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#16191d; --fg:#e4e8ec; --muted:#9aa5b1; --line:#323940; --head:#222830; --stripe:#1b1f24; --warn:#e0b050; }
+}
+body { background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+       margin:0 auto; padding:24px 16px; max-width:1400px; }
+h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:17px; margin:28px 0 8px; }
+.muted { color:var(--muted); } .warn { color:var(--warn); }
+.scroll { overflow-x:auto; border:1px solid var(--line); border-radius:6px; }
+table { border-collapse:collapse; width:100%; font-variant-numeric:tabular-nums; }
+th, td { padding:5px 10px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
+th { background:var(--head); position:sticky; top:0; }
+tbody tr:nth-child(even) td { background:var(--stripe); }
+table.kv th { width:12em; white-space:normal; } table.kv td { white-space:pre-line; }
+code { font-size:12px; }
+</style></head>
+<body>
+<h1>Join Left</h1>
+<p class="muted">Workbook Query {VERSION}</p>
+<div class="scroll"><table class="kv"><tbody><tr><th>Query</th><td>Join Left</td></tr><tr><th>Description</th><td>Golden case join_left</td></tr><tr><th>Mode</th><td>Join on key columns</td></tr><tr><th>Join type</th><td>left</td></tr><tr><th>Keys</th><td>L › Lot, R › Lot ID</td></tr><tr><th>Conditions</th><td>(all rows)</td></tr><tr><th>Run at</th><td>{RUN_AT}</td></tr><tr><th>Rows out: Joined</th><td>6</td></tr></tbody></table></div>
+<p class="warn">⚠ L: 1 row(s) with a blank key never match another sheet</p><p class="warn">⚠ R: 1 key value(s) in &#x27;Lot ID&#x27; appear on more than one row; each such row is paired with every match in the other sheets</p>
+<h2>Joined <span class="muted">(6 rows)</span></h2><div class="scroll"><table><thead><tr><th>Key</th><th>L Excel row</th><th>L.Status</th><th>L.Made</th><th>R Excel row</th><th>R.Value</th><th>R.Pct</th></tr></thead><tbody>
+<tr><td>A1</td><td>2</td><td>Pass</td><td>2024-01-05</td><td>2</td><td>50000000.0</td><td>50%</td></tr>
+<tr><td>A2</td><td>3</td><td>Fail</td><td>2024-02-10</td><td>3</td><td>70000000.0</td><td>80%</td></tr>
+<tr><td>A2</td><td>3</td><td>Fail</td><td>2024-02-10</td><td>4</td><td>60000000.0</td><td>90%</td></tr>
+<tr><td>A3</td><td>4</td><td>pass</td><td>2024-03-01</td><td></td><td></td><td></td></tr>
+<tr><td>101</td><td>5</td><td>Pass</td><td>2024-03-15</td><td>5</td><td>10000000.0</td><td>10%</td></tr>
+<tr><td></td><td>6</td><td>Fail</td><td>2024-04-01</td><td></td><td></td><td></td></tr>
+</tbody></table></div>
+<h2>Sources</h2>
+<div class="scroll"><table><thead><tr><th>Source</th><th>File</th><th>Sheet</th><th>Rows</th><th>Matched</th><th>SHA-256</th></tr></thead><tbody><tr><td>L</td><td>{DIR}/data/lots.xlsx</td><td>Lots</td><td>5</td><td>6</td><td><code>ec33631b3294ed75fed17f2d3a8e1a9dae820a15cead33e1aa992593b0774134</code></td></tr><tr><td>R</td><td>{DIR}/data/results.xlsx</td><td>Results</td><td>5</td><td>4</td><td><code>e96000af537d3920145339fd598ea289b89e6ad31744ecec6a2dc1b4a6d168ea</code></td></tr></tbody></table></div>
+</body></html>

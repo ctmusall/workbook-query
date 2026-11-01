@@ -1,12 +1,9 @@
-.venv/
-build/
-dist/
-__pycache__/
-*.egg-info/
-.coverage
-.pytest_cache/
+# Rust
+target/
+
 out/
 
 # Local data (kept out of version control)
 *.xlsx
-!tests/data/*.xlsx
+!tests/golden/data/*.xlsx
+!tests/golden/smoke/*.xlsx
