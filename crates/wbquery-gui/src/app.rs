@@ -80,6 +80,8 @@ pub struct WbqApp {
     hidden_labels: usize,
     /// A picker to open over the current dialog (the datasets dialog's Y columns).
     pending_child: Option<Picker>,
+    /// The left pane (sheets, conditions, outputs) is shown.
+    pub left_open: bool,
 }
 
 impl WbqApp {
@@ -94,6 +96,7 @@ impl WbqApp {
             last_title: String::new(),
             hidden_labels: 0,
             pending_child: None,
+            left_open: true,
         }
     }
 
@@ -214,9 +217,24 @@ impl WbqApp {
         }
         self.shortcuts(&ctx);
 
-        egui::Panel::left("left").resizable(true).default_size(640.0).show(ui, |ui| {
-            egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| self.left(ui));
-        });
+        if self.left_open {
+            egui::Panel::left("left").resizable(true).default_size(640.0).show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.button("◀").on_hover_text("Hide this pane").clicked() {
+                            self.left_open = false;
+                        }
+                    });
+                });
+                egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| self.left(ui));
+            });
+        } else {
+            egui::Panel::left("left-hidden").resizable(false).exact_size(30.0).show(ui, |ui| {
+                if ui.button("▶").on_hover_text("Show sheets, conditions and output columns").clicked() {
+                    self.left_open = true;
+                }
+            });
+        }
         egui::CentralPanel::default().show(ui, |ui| self.right(ui));
         self.dialogs(&ctx);
         self.error_dialog(&ctx);
@@ -235,32 +253,34 @@ impl WbqApp {
     }
 
     fn left(&mut self, ui: &mut Ui) {
-        ui.add_space(4.0);
-        egui::CollapsingHeader::new(RichText::new("Query").strong()).default_open(true).show(ui, |ui| {
-            egui::Grid::new("about").num_columns(2).show(ui, |ui| {
-                ui.label("Name");
-                ui.add(
-                    egui::TextEdit::singleline(&mut self.state.name)
-                        .hint_text("Name it, e.g. EOJ personnel hits, full year")
-                        .desired_width(f32::INFINITY),
-                );
-                ui.end_row();
-                ui.label("Description");
-                ui.add(
-                    egui::TextEdit::multiline(&mut self.state.description)
-                        .hint_text("What it finds and why, so you remember later (saved with the query and shown in exports)")
-                        .desired_rows(3)
-                        .desired_width(f32::INFINITY),
-                );
-                ui.end_row();
-            });
+        section(ui, "Query", |ui| self.about(ui));
+        section(ui, "Workbook sheets", |ui| self.sources(ui));
+        section(ui, "How sheets combine", |ui| self.combine(ui));
+        section(ui, "Conditions", |ui| self.conditions(ui));
+        section(ui, "Output columns", |ui| self.outputs(ui));
+    }
+
+    fn about(&mut self, ui: &mut Ui) {
+        egui::Grid::new("about").num_columns(2).show(ui, |ui| {
+            ui.label("Name");
+            ui.add(
+                egui::TextEdit::singleline(&mut self.state.name)
+                    .hint_text("Name it, e.g. EOJ personnel hits, full year")
+                    .desired_width(f32::INFINITY),
+            );
+            ui.end_row();
+            ui.label("Description");
+            ui.add(
+                egui::TextEdit::multiline(&mut self.state.description)
+                    .hint_text("What it finds and why, so you remember later (saved with the query and shown in exports)")
+                    .desired_rows(3)
+                    .desired_width(f32::INFINITY),
+            );
+            ui.end_row();
         });
-        ui.separator();
-        self.sources(ui);
-        ui.separator();
-        self.combine(ui);
-        ui.separator();
-        ui.label(RichText::new("Conditions").strong());
+    }
+
+    fn conditions(&mut self, ui: &mut Ui) {
         ui.horizontal_wrapped(|ui| {
             if ui.button("Add condition").on_hover_text("Add a condition to the selected group, on the selected condition's sheet and column").clicked() {
                 self.state.add_condition(None);
@@ -311,12 +331,9 @@ impl WbqApp {
             self.run();
         }
         ui.label(RichText::new(where_text(&self.state.conditions)).weak());
-        ui.separator();
-        self.outputs(ui);
     }
 
     fn sources(&mut self, ui: &mut Ui) {
-        ui.label(RichText::new("Workbook sheets").strong());
         let n = self.state.entries.len();
         self.alias_edits.resize(n, String::new());
         let join = self.state.join;
@@ -389,7 +406,6 @@ impl WbqApp {
     }
 
     fn combine(&mut self, ui: &mut Ui) {
-        ui.label(RichText::new("How sheets combine").strong());
         ui.radio_value(&mut self.state.join, false, "Filter each sheet on its own");
         ui.horizontal(|ui| {
             ui.radio_value(&mut self.state.join, true, "Join sheets on a key column");
@@ -402,7 +418,6 @@ impl WbqApp {
 
     fn outputs(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label(RichText::new("Output columns").strong());
             if ui
                 .add_enabled(!self.state.outputs.is_empty(), egui::Button::new("Choose for all sheets…"))
                 .on_hover_text("Tick or untick a column in every sheet that has it, all at once")
@@ -1078,6 +1093,14 @@ impl WbqApp {
             self.state.errors.remove(0);
         }
     }
+}
+
+/// A collapsible section of the left pane, open at first.
+fn section(ui: &mut Ui, title: &str, add: impl FnOnce(&mut Ui)) {
+    egui::CollapsingHeader::new(RichText::new(title).strong())
+        .id_salt(("section", title))
+        .default_open(true)
+        .show(ui, add);
 }
 
 /// Why "Add for column…" can't go ahead, or "". A blank value is allowed (filled in later).

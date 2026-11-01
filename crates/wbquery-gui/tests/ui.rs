@@ -216,6 +216,31 @@ fn pressing_a_rows_widget_selects_the_row() {
 }
 
 #[test]
+fn sections_and_left_pane_collapse() {
+    let mut h = harness(app());
+    h.run();
+    // Each section folds away and opens again.
+    h.get_by_label("Add condition");
+    h.get_by_label("Conditions").click();
+    h.run();
+    assert!(h.query_by_label("Add condition").is_none());
+    h.get_by_label("Conditions").click();
+    h.run();
+    h.get_by_label("Add condition");
+    h.get_by_label("Workbook sheets").click();
+    h.run();
+    assert!(h.query_by_label("Add workbooks…").is_none());
+    // The whole pane hides, leaving the results the window.
+    h.get_by_label("◀").click();
+    h.run();
+    assert!(h.query_by_label("Add condition").is_none());
+    h.get_by_label("Run query");
+    h.get_by_label("▶").click();
+    h.run();
+    h.get_by_label("Add condition");
+}
+
+#[test]
 fn errors_show_in_a_dialog() {
     let mut a = WbqApp::new(AppState::default());
     a.state.error("Something odd <> '0'");
