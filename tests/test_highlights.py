@@ -272,3 +272,37 @@ def test_operators_and_tags_show_literally(qtbot, monkeypatch):
     assert "'<b>x</b>'" in plain(win.conditions.preview.text())
     win.error("Any sheet › Chest 1 <> 'x': needs a value\nsecond line")
     assert plain(shown[-1]) == "Any sheet › Chest 1 <> 'x': needs a value\nsecond line"
+
+
+def test_crowded_labels_never_overlap():
+    n = 60
+    df = pd.DataFrame({"Date": pd.date_range("2026-01-01", periods=n),
+                       "Hand 1": [f"1 Staphylococcus species{i}" for i in range(n)],
+                       "Hand 2": ["4 Micrococcus luteus"] + [0] * (n - 1)})
+    fig = Figure(figsize=(8, 4))
+    notes = draw(fig, df, ChartSpec("scatter", x="Date", y="Hand 1", ys=["Hand 2"], point_labels=True))
+    ax = fig.axes[0]
+    renderer = fig._get_renderer()
+    boxes = [t.get_window_extent(renderer) for t in ax.texts]
+    assert 0 < len(boxes) < n
+    assert not any(a.overlaps(b) for i, a in enumerate(boxes) for b in boxes[i + 1:])
+    assert ax.texts[0].get_text() == "Micrococcus luteus"  # highest value labeled first
+    assert any("hidden so labels don't overlap" in note for note in notes)
+
+
+def test_hover_lists_points_under_the_cursor(qtbot):
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    pytest.importorskip("PySide6")
+    from wbquery.gui_charts import ChartPanel
+
+    panel = ChartPanel()
+    qtbot.addWidget(panel)
+    df = EM.reset_index(drop=True)
+    draw(panel.figure, df, ChartSpec("scatter", x="Monitor Date", y="Chest 1", ys=["Hand 1"]))
+    panel.canvas.draw()
+    ax = panel.figure.axes[0]
+    xy = ax.wbq_points[0][0][2]  # Chest 1 on 2026-01-07: "1 Micrococcus luteus"
+    x, y = ax.transData.transform(xy)
+    text = panel.hover_text(x, y)
+    assert "1 Micrococcus luteus" in text and "Monitor Date: 2026-01-07" in text and "Chest" in text
+    assert panel.hover_text(x + 200, y + 200) == ""

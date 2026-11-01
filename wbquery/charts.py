@@ -29,7 +29,7 @@ LIMIT_COLOR = "#c0392b"
 CENTER_COLOR = "#2c7a3f"
 BLANK = "(blank)"
 OTHER = "Other"
-MAX_POINT_LABELS = 60  # points labeled with the text after their number ("Micrococcus luteus")
+MAX_POINT_LABELS = 300  # labels tried (text after a number, "Micrococcus luteus"); overlapping ones are dropped
 MULTI_Y = ("line", "scatter")
 
 
@@ -362,6 +362,7 @@ def _multi_y(fig, df, spec, notes, hits, plot):
     groups = _groups(df, spec.group)
     named = len(series) > 1
     labels: list[tuple[float, float, str]] = []
+    ax.wbq_points = []  # (numeric xy array, tooltip per point) per series, for hovering in the app
     drawn = 0
     for gi, (gname, idx) in enumerate(groups):
         for si, (sname, cols) in enumerate(series):
@@ -375,17 +376,23 @@ def _multi_y(fig, df, spec, notes, hits, plot):
             if spec.x and cats is None:
                 d = d.sort_values("x", kind="stable")
             label = " · ".join(p for p in (sname if named else "", gname) if p) or None
-            plot(ax, d, _color(gi * len(series) + si), label)
+            artist = plot(ax, d, _color(gi * len(series) + si), label)
+            xy = artist.get_xydata() if hasattr(artist, "get_xydata") else artist.get_offsets()
+            raw = pd.concat([sub[c] for c in cols], keys=cols).reindex(d.index)
+            ax.wbq_points.append((np.asarray(xy, dtype=float), [
+                _tooltip(label or sname, col, raw_v, spec.x, df.loc[row, spec.x] if spec.x else None)
+                for (col, row), raw_v in zip(d.index, raw)]))
             drawn += len(d)
             if spec.point_labels:
                 labels += [(x, y, t) for x, y, t in zip(d["x"], d["y"], d["text"]) if t]
     if not drawn:
         raise ChartError("No numeric values to plot" + (" in the cells the conditions matched"
                                                         if spec.only_hits and hits is not None else ""))
-    for x, y, text in labels[:MAX_POINT_LABELS]:
-        ax.annotate(text, (x, y), xytext=(4, 4), textcoords="offset points", fontsize=7, alpha=0.85)
-    if len(labels) > MAX_POINT_LABELS:
-        notes.append(f"Labeled the first {MAX_POINT_LABELS} of {len(labels)} points with text after the number")
+    # Highest values first, so the rarer large counts keep their labels when space runs out.
+    labels.sort(key=lambda t: -t[1])
+    ax.wbq_labels = [ax.annotate(text, (x, y), xytext=(4, 4), textcoords="offset points", fontsize=7, alpha=0.85)
+                     for x, y, text in labels[:MAX_POINT_LABELS]]
+    ax.wbq_label_total = len(labels)
     if cats:
         _category_ticks(ax, cats)
     ax.set_ylabel(spec.y_columns()[0] if len(spec.y_columns()) == 1 else
@@ -393,9 +400,55 @@ def _multi_y(fig, df, spec, notes, hits, plot):
     return [ax]
 
 
+def _tooltip(series: str, column: str, raw, xname: str, xval) -> str:
+    """What hovering a point shows: series, column and cell, and the X value."""
+    lines = [f"{series}" if series == column else f"{series} — {column}", label(raw)]
+    if xname:
+        lines.append(f"{xname}: {label(xval)}")
+    return "\n".join(lines)
+
+
+_LABEL_SPOTS = (((4, 4), "left", "bottom"), ((-4, 4), "right", "bottom"), ((4, -4), "left", "top"),
+                ((-4, -4), "right", "top"))
+
+
+def _thin_labels(fig, axes) -> int:
+    """Place each point label (in the order drawn) at the first corner around its point where it stays
+    inside the plot without overlapping a label already placed; remove it when no corner works.
+    Returns how many of the labels asked for aren't shown."""
+    hidden = 0
+    try:
+        renderer = fig.canvas.get_renderer() if hasattr(fig.canvas, "get_renderer") else fig._get_renderer()
+    except Exception:  # noqa: BLE001 - no renderer: keep every label
+        return 0
+    for ax in axes:
+        texts = getattr(ax, "wbq_labels", None)
+        if not texts:
+            continue
+        area = ax.get_window_extent(renderer)
+        legend = ax.get_legend()
+        kept = [legend.get_window_extent(renderer)] if legend is not None else []
+        legend_boxes = len(kept)
+        for t in texts:
+            for (dx, dy), ha, va in _LABEL_SPOTS:  # above right, above left, below right, below left
+                t.set_position((dx, dy))
+                t.set_horizontalalignment(ha)
+                t.set_verticalalignment(va)
+                box = t.get_window_extent(renderer).padded(5)  # a clear gap, so neighbours don't read as one
+                inside = (area.x0 <= box.x0 + 5 and box.x1 - 5 <= area.x1 and area.y0 <= box.y0 + 5
+                          and box.y1 - 5 <= area.y1)
+                if inside and not any(box.overlaps(k) for k in kept):
+                    kept.append(box)
+                    break
+            else:
+                t.remove()
+        hidden += ax.wbq_label_total - (len(kept) - legend_boxes)
+    return hidden
+
+
 def _line(fig, df, spec, notes, hits=None):
     return _multi_y(fig, df, spec, notes, hits, lambda ax, d, color, label: ax.plot(
-        d["x"], d["y"], marker="o", markersize=3, linewidth=1.3, color=color, label=label))
+        d["x"], d["y"], marker="o", markersize=3, linewidth=1.3, color=color, label=label)[0])
 
 
 def _scatter(fig, df, spec, notes, hits=None):
@@ -604,4 +657,8 @@ def draw(fig: Figure, df: pd.DataFrame, spec: ChartSpec, hits: pd.DataFrame | No
         fig.tight_layout()
     except (ValueError, np.linalg.LinAlgError):  # very small canvases
         pass
+    hidden = _thin_labels(fig, axes)
+    if hidden:
+        notes.append(f"{hidden} point label{'s' if hidden != 1 else ''} hidden so labels don't overlap"
+                     " (hover a point to see its text)")
     return notes

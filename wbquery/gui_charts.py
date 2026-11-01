@@ -9,10 +9,12 @@ import matplotlib
 matplotlib.use("QtAgg")
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT  # noqa: E402
 from matplotlib.figure import Figure  # noqa: E402
+import numpy as np  # noqa: E402
 from PySide6.QtCore import Qt, QTimer  # noqa: E402
+from PySide6.QtGui import QCursor  # noqa: E402
 from PySide6.QtWidgets import (  # noqa: E402
     QCheckBox, QComboBox, QDialog, QFileDialog, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton,
-    QSpinBox, QVBoxLayout, QWidget,
+    QSpinBox, QToolTip, QVBoxLayout, QWidget,
 )
 
 from .charts import AGGREGATES, KINDS, MULTI_Y, ChartError, ChartSpec, draw, is_date, numeric_columns  # noqa: E402
@@ -85,6 +87,9 @@ class ChartPanel(QWidget):
         self.figure = Figure(figsize=(8, 5), dpi=100)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.toolbar = NavigationToolbar2QT(self.canvas, self)
+        self.canvas.mpl_connect("motion_notify_event", self._hover)
+        # Which point labels fit depends on the canvas size, so redraw (re-picking them) after a resize.
+        self.canvas.mpl_connect("resize_event", lambda _e: self.schedule())
         bar = QHBoxLayout()
         bar.addWidget(self.toolbar)
         bar.addStretch()
@@ -306,6 +311,29 @@ class ChartPanel(QWidget):
         self.canvas.draw_idle()
         self.message.setText(" · ".join(notes))
         return True
+
+    def hover_text(self, x: float, y: float, radius: float = 8.0) -> str:
+        """Tooltip for canvas pixel (``x``, ``y``): every point within ``radius`` pixels (several readings can
+        share a date and value), nearest first; '' when there's none."""
+        found = []
+        for ax in self.figure.axes:
+            for xy, tips in getattr(ax, "wbq_points", []):
+                if not len(xy):
+                    continue
+                pix = ax.transData.transform(xy)
+                dist = np.hypot(pix[:, 0] - x, pix[:, 1] - y)
+                found += [(d, tips[i]) for i, d in enumerate(dist) if d <= radius]
+        found.sort(key=lambda f: f[0])
+        tips = [t for _, t in found]
+        more = len(tips) - 8
+        return "\n\n".join(tips[:8]) + (f"\n\n… and {more} more" if more > 0 else "")
+
+    def _hover(self, event):
+        text = self.hover_text(event.x, event.y) if event.inaxes is not None else ""
+        if text:
+            QToolTip.showText(QCursor.pos(), text, self.canvas)
+        else:
+            QToolTip.hideText()
 
     def has_error(self) -> bool:
         return self.message.text().startswith("<span")
